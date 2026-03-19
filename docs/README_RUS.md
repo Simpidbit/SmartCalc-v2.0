@@ -1,15 +1,21 @@
 # SmartCalc v2.0
 
+<p align="center">
+  <a href="../README.md"><img src="https://img.shields.io/badge/Language-English-1f6feb" alt="English"></a>
+  <a href="README_CHN.md"><img src="https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-d97706" alt="中文"></a>
+  <a href="README_RUS.md"><img src="https://img.shields.io/badge/%D0%AF%D0%B7%D1%8B%D0%BA-%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9-059669" alt="Русский"></a>
+</p>
+
 #### Реализация расширенной версии обычного калькулятора на С++17.
 
 Помимо базовых арифметических операций, как плюс-минус и умножить-поделить, предусмотрено вычисление арифметических выражений с учетом приоритетов, а также некоторыми математическими функциями (синус, косинус, логарифм и т.д.). Поддерживается использование переменной *x* и построение графика соответствующей функции.
 
 <p align="center">
-  <img src="images/calc.gif" alt="Calculator" width="200">
+  <img src="../images/calc.gif" alt="Calculator" width="200">
 </p>
 
 <p align="center">
-  <img src="images/graph.gif" alt="Graphing" width="500">
+  <img src="../images/graph.gif" alt="Graphing" width="500">
 </p>
 
 - Программа разработана на языке C++ стандарта C++17 с использованием компилятора gcc;
@@ -35,7 +41,7 @@
 
 К `представлению` относится весь код, связанный с интерфейсом программы, в то время как `модель` отвечает за выполнение вычислений.
 
-![](images/MVC-Process.png)
+![](../images/MVC-Process.png)
 
 #### Вычисления 
 
@@ -72,3 +78,4 @@
 ---
 
 <p align="center"> risahamm@student.21-school.ru</p>
+<p align="center">simpidbit@gmail.com</p>

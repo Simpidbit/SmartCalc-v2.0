@@ -63,7 +63,9 @@ else()
     endif()
 endif()
 
-target_compile_options(view PRIVATE -Wa,-mbig-obj)
+if(MINGW)
+    target_compile_options(view PRIVATE -Wa,-mbig-obj)
+endif()
 
 target_link_libraries(view PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::PrintSupport)
 

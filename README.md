@@ -1,5 +1,11 @@
 # SmartCalc v2.0
 
+<p align="center">
+  <a href="README.md"><img src="https://img.shields.io/badge/Language-English-1f6feb" alt="English"></a>
+  <a href="docs/README_CHN.md"><img src="https://img.shields.io/badge/%E8%AF%AD%E8%A8%80-%E4%B8%AD%E6%96%87-d97706" alt="中文"></a>
+  <a href="docs/README_RUS.md"><img src="https://img.shields.io/badge/%D0%AF%D0%B7%D1%8B%D0%BA-%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9-059669" alt="Русский"></a>
+</p>
+
 #### Implementation of an extended version of a conventional calculator in C++17.
 
 In addition to basic arithmetic operations, such as plus-minus and multiply-divide, it is possible to calculate arithmetic expressions taking into account priorities, as well as some mathematical functions (sin, cos, logarithm, etc.).
@@ -74,3 +80,4 @@ End.
 ---
 
 <p align="center"> risahamm@student.21-school.ru</p>
+<p align="center">simpidbit@gmail.com</p>
