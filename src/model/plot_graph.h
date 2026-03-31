@@ -9,31 +9,29 @@
 namespace s21 {
 
 /**
- * @brief Class for calculating and storing coordinates for graphing.
- * @details This class takes a mathematical expression and a range of x-values,
- * computes the corresponding y-values using the provided expression,
- * and stores the resulting coordinates in vectors for further use,
- * which is plotting a graph.
+ * @brief 计算绘图坐标数据的类。
+ * @details 该类接收数学表达式及 x 轴取值范围，
+ * 按固定步长对 x 进行采样，并调用计算模块得到对应 y 值，
+ * 最终返回可直接用于绘图的坐标向量。
  */
 class PlotGraph {
  public:
   /**
-   * @brief Default constructor.
+   * @brief 默认构造函数。
    */
   PlotGraph() = default;
 
   /**
-   * @brief Default destructor.
+   * @brief 默认析构函数。
    */
   ~PlotGraph() = default;
 
   /**
-   * @brief Calculates the x and y coordinates for the given expression over the
-   * specified range.
-   * @param expression string representing mathematical expression.
-   * @param x_range pair of doubles representing the range of x-values.
-   * @return pair of vectors containing the x-coordinates and corresponding
-   * y-coordinates.
+   * @brief 在指定 x 范围内计算表达式对应的 x、y 坐标序列。
+   * @param expression 数学表达式字符串。
+   * @param x_range x 轴范围，`first` 为最小值，`second` 为最大值。
+   * @return `std::pair<std::vector<double>, std::vector<double>>`，
+   * 其中第一个向量为 x 坐标，第二个向量为对应 y 坐标。
    */
   std::pair<std::vector<double>, std::vector<double>> Calculate(
       std::string &expression, std::pair<double, double> x_range) {
@@ -60,12 +58,12 @@ class PlotGraph {
   }
 
  private:
-  long double x_min_;  ///< min x-value
-  long double x_max_;  ///< max x-value
+  long double x_min_;  ///< x 轴最小值
+  long double x_max_;  ///< x 轴最大值
   std::pair<std::vector<double>, std::vector<double>>
-      coordinates_;  ///< coordinates for plotting
+      coordinates_;  ///< 绘图坐标数据（当前版本中未直接使用）
   Calculation
-      calc_expression_;  ///< instance of Calculation to evaluate expressions
+      calc_expression_;  ///< 计算器实例，用于按采样点求表达式值
 
 };  // class PlotGraph
 

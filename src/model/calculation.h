@@ -13,54 +13,49 @@
 namespace s21 {
 
 /**
- * @brief Class that performs arithmetic and trigonometric calculations
- * based on mathematical expressions.
- * @details This class provides functionality to parse mathematical expressions,
- * convert them into Reverse Polish Notation (RPN), and compute the result.
- * It supports variable substitution for expressions containing a variable 'x'.
- * The result of the calculation can be retrieved using the GetResult method.
+ * @brief 基于数学表达式执行算术与三角函数计算的类。
+ * @details 该类负责解析输入表达式，将其中缀形式转换为逆波兰表达式（RPN），
+ * 并按逆波兰序列完成求值。支持在表达式中使用变量 `x`，
+ * 计算完成后可通过 GetResult 获取结果。
  */
 class Calculation {
  public:
   /**
-   * @brief Default constructor.
+   * @brief 默认构造函数。
    */
   Calculation() = default;
 
   /**
-   * @brief Default destructor.
+   * @brief 默认析构函数。
    */
   ~Calculation() = default;
 
   /**
-   * @brief Retrieves the result of calculation.
-   * @return long double value representing the result of the calculation.
+   * @brief 获取最近一次计算结果。
+   * @return long double 类型的计算结果。
    */
   long double GetResult();
 
   /**
-   * @brief Iterates through the expression, pushing numbers into stack and
-   * performing calculations when operators are encountered.
-   * @details Results of operations are also pushed into stack. At the end of
-   * the parsing, the final result of the expression is stored in
-   * calculation_result_.
-   * @param expression input expression to be calculated.
-   * @param x_value value of x variable.
+   * @brief 解析并计算输入表达式。
+   * @details 函数会遍历逆波兰表达式序列：遇到数字（或变量 x）则入栈，
+   * 遇到运算符则从栈中取操作数执行运算，并将结果重新压栈。
+   * 序列处理结束后，栈顶值即为最终结果，保存到 `calculation_result_`。
+   * @param expression 待计算的输入表达式。
+   * @param x_value 变量 x 的替换值。
    */
   void Parse(std::string &expression, long double x_value);
 
  private:
-  ReversePolishNotation rpn_;  ///< class converting input expression into RPN
-  std::list<Lexeme> expression_;    ///< expression in RPN to calculate
-  long double calculation_result_;  ///< result of calculations
+  ReversePolishNotation rpn_;  ///< 负责将输入表达式转换为逆波兰表达式的对象
+  std::list<Lexeme> expression_;    ///< 待计算的逆波兰表达式序列
+  long double calculation_result_;  ///< 计算结果
 
   /**
-   * @brief Performs arithmetic and trigonometric calculations based on the
-   * given operator and operands.
-   * @param current_operator reference to the lexeme that contains the
-   * operator to be applied.
-   * @param numbers stack of double values representing the operands.
-   * @return result of calculations as long double.
+   * @brief 根据当前运算符与操作数执行具体计算。
+   * @param current_operator 当前运算符对应的词法单元引用。
+   * @param numbers 存放操作数的栈。
+   * @return long double 类型的运算结果。
    */
   long double Calculate(s21::Lexeme &current_operator,
                         std::stack<long double> &numbers);

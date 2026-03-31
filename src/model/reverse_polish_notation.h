@@ -10,85 +10,78 @@
 namespace s21 {
 
 /**
- * @brief Class for converting an expression into Reversed Polish Notation
- * (RPN). This class takes a string expression, splits it into lexemes and
- * converts them into RPN. The result is stored in std::list container.
- * @details This class implements Dijkstra's algorithm or so called
- * "shunting-yard algorithm". The algorithm is is stack-based. There are two
- * text variables involved in the conversion: the input and the output list. The
- * conversion process uses the stack to store operations not yet added to the
- * output list. The conversion program sequentially reads each token from the
- * input string and on each step does certain actions based on which tokens have
- * been read.
+ * @brief 将中缀表达式转换为逆波兰表达式（RPN）的类。
+ * @details 该类接收字符串形式的表达式，将其拆分为词法单元并转换为 RPN，
+ * 结果存储在 `std::list` 容器中。
+ * 转换过程采用 Dijkstra 的 Shunting-yard（调度场）算法，
+ * 基于栈管理尚未输出的运算符，并按顺序扫描输入 token 逐步生成输出序列。
  */
 class ReversePolishNotation {
  public:
   /**
-   * @brief Default constructor.
+   * @brief 默认构造函数。
    */
   ReversePolishNotation() = default;
   /**
-   * @brief Default destructor.
+   * @brief 默认析构函数。
    */
   ~ReversePolishNotation() = default;
 
   /**
-   * @brief Retrieves a list of lexemes in RPN.
-   * @return std::list<Lexeme> list of lexemes representing the expression in
-   * RPN.
+   * @brief 获取逆波兰表达式词法单元序列。
+   * @return `std::list<Lexeme>` 类型的 RPN 词法单元列表。
    */
   std::list<Lexeme> GetRpnList() { return rpn_list_; };
 
   /**
-   * @brief Converts a string into a list of separate lexemes converted into
-   * RPN.
-   * @param str expression to be converted into RPN.
+   * @brief 将输入字符串表达式转换为 RPN 序列。
+   * @param str 待转换的中缀表达式字符串。
    */
   void Convert(std::string &str);
 
  private:
-  std::list<Lexeme> rpn_list_;  ///< list of separate lexemes converted into RPN
+  std::list<Lexeme> rpn_list_;  ///< 转换后的逆波兰词法单元列表
 
   /**
-   * @brief Parses a number as a single lexeme and pushes it to the RPN List.
-   * @param it pointer to the first digit of a number.
-   * @return value to move the iterator in the string after parsing a lexeme.
+   * @brief 解析数字词法单元并追加到 RPN 列表。
+   * @param it 指向数字起始位置的字符串迭代器。
+   * @return 解析完成后，外层迭代器应前进的字符数。
    */
   size_t ParseNumber(std::string::iterator it);
 
   /**
-   * @brief Parses an operator and pushes it to the stack.
-   * @param operators_stack stack of operators.
-   * @param it pointer to an element in the string.
-   * @param str input string.
+   * @brief 解析当前运算符并根据优先级规则处理运算符栈。
+   * @param operators_stack 运算符栈。
+   * @param it 指向当前字符的迭代器。
+   * @param str 输入表达式字符串。
    */
   void ParseOperator(std::stack<Lexeme> &operators_stack,
                      std::string::iterator it, std::string &str);
 
   /**
-   * @brief Pops and adds to RPN list everything until '(' is met.
-   * @param operators_stack stack of operators.
+   * @brief 处理右括号：持续弹栈并输出，直到遇到左括号。
+   * @param operators_stack 运算符栈。
    */
   void CloseParenth(std::stack<Lexeme> &operators_stack);
 
   /**
-   * @brief Pushes opening parenthesis to the stack.
-   * @param operators_stack stack of operators.
+   * @brief 将左括号压入运算符栈。
+   * @param operators_stack 运算符栈。
    */
   void PushOpenParenth(std::stack<Lexeme> &operators_stack);
 
   /**
-   * @brief Checks the priority of the element.
-   * @param it iterator to the element.
-   * @return priority of the element.
+   * @brief 获取当前符号对应的优先级。
+   * @param it 指向当前符号的迭代器。
+   * @return 当前符号对应的 Priority。
    */
   Priority GetPriority(std::string::iterator it);
 
   /**
-   * @brief Checks if `-` or `+` is unary.
-   * @param it iterator to the element.
-   * @param str input string.
-   * @return true if unary, otherwise false.
+   * @brief 判断 `+` 或 `-` 是否为一元符号。
+   * @param it 指向当前符号的迭代器。
+   * @param str 输入表达式字符串。
+   * @return 若为一元符号返回 `true`，否则返回 `false`。
    */
   bool IsUnary(std::string::iterator it, std::string &str);
 

@@ -7,31 +7,30 @@
 namespace s21 {
 
 /**
- * @brief Class that manages the interaction between the model and the view.
- * @details This class serves as a mediator between the calculation model
- * and graphic interface. It processes user input, performs calculations,
- * and retrieves graphical coordinates for plotting graphs.
+ * @brief 管理 Model 与 View 之间交互的控制器类。
+ * @details 该类作为计算模型与图形界面之间的中介层，
+ * 接收视图层请求，调用模型层完成表达式计算，
+ * 并返回绘图所需的坐标数据。
  */
 class Controller {
  public:
   /**
-   * @brief Constructs a Controller with a given Calculation model.
-   * @param calculation pointer to a Calculation object used for parsing
-   * expressions and computing results.
+   * @brief 使用指定的 Calculation 模型构造 Controller。
+   * @param calculation 指向 Calculation 对象的指针，
+   * 用于表达式解析与结果计算。
    */
   Controller(Calculation *calculation) : model_(calculation){};
 
   /**
-   * @brief Default destructor.
+   * @brief 默认析构函数。
    */
   ~Controller() = default;
 
   /**
-   * @brief Calculates the result of a mathematical expression.
-   * @param expression string representing the mathematical expression to be
-   * evaluated.
-   * @param x_value x-value to substitute into the expression during evaluation.
-   * @return computed result as a long double.
+   * @brief 计算数学表达式结果。
+   * @param expression 待计算的数学表达式字符串。
+   * @param x_value 计算时用于替换变量 x 的数值。
+   * @return long double 类型的计算结果。
    */
   long double Calculate(std::string expression, double x_value) {
     model_->Parse(expression, x_value);
@@ -39,13 +38,11 @@ class Controller {
   }
 
   /**
-   * @brief Calculates the x and y coordinates for graphing based on the given
-   * expression.
-   * @param expression string representing the mathematical expression to be
-   * evaluated.
-   * @param x_range pair of long doubles representing the range of x-values.
-   * @return pair of vectors containing the x-coordinates and corresponding
-   * y-coordinates.
+   * @brief 根据表达式计算绘图所需的 x、y 坐标序列。
+   * @param expression 待绘制的数学表达式字符串。
+   * @param x_range x 轴范围，`first` 为最小值，`second` 为最大值。
+   * @return `std::pair<std::vector<double>, std::vector<double>>`，
+   * 其中第一个向量为 x 坐标，第二个向量为对应 y 坐标。
    */
   std::pair<std::vector<double>, std::vector<double>> CalculateGraphCoordinates(
       std::string &expression, std::pair<long double, long double> x_range) {
@@ -54,8 +51,8 @@ class Controller {
 
  private:
   Calculation
-      *model_;  ///< pointer to the Calculation model for expression evaluation
-  PlotGraph plot_;  ///< instance of PlotGraph for calculating graph coordinates
+      *model_;  ///< 指向 Calculation 模型对象的指针，用于表达式求值
+  PlotGraph plot_;  ///< PlotGraph 实例，用于生成绘图坐标数据
 
 };  // class controller
 
