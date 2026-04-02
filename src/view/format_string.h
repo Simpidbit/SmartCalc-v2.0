@@ -8,44 +8,42 @@
 namespace s21 {
 
 /**
- * @brief Class for converting an input QString into std::string suitable
- * for calculation.
- * @details This class takes a string of characters and converts it
- * into basic string suitable for calculation. It shortens long lexemes and
- * prepares the string for parsing.
+ * @brief 将输入的 QString 转换为适合计算的 `std::string`。
+ * @details 该类负责把界面中的表达式字符串转换为模型层可解析的基础字符串，
+ * 同时会缩短较长的函数词法单元并完成解析前预处理。
  */
 class FormatString {
  public:
   /**
-   * @brief Parametrized constructor.
-   * @param input_str QString to be converted.
+   * @brief 带参构造函数。
+   * @param input_str 待转换的 QString。
    */
   FormatString(QString const input_str) : q_str_(input_str), basic_str_("") {
     Convert();
   }
 
   /**
-   * @brief Default destructor.
+   * @brief 默认析构函数。
    */
   ~FormatString() = default;
 
   /**
-   * @brief Accessor.
-   * @return std::string expression suitable for calculation.
+   * @brief 获取转换后的字符串。
+   * @return 返回适合计算的表达式字符串。
    */
   std::string GetString() { return basic_str_; }
 
  private:
-  std::string basic_str_;  ///< result of convertion
-  QString q_str_;          ///< input string to be converted
+  std::string basic_str_;  ///< 转换后的结果字符串。
+  QString q_str_;          ///< 待转换的输入字符串。
 
   /**
-   * @brief Converts QString into std::string suitable for calculation.
+   * @brief 将 QString 转换为适合计算的 `std::string`。
    */
   void Convert();
 
-};  // class FormatString
+};
 
-}  // namespace s21
+}
 
-#endif  // CPP3_SMARTCALC_V2_0_SRC_VIEW_FORMAT_STRING_H_
+#endif

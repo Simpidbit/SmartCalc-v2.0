@@ -4,7 +4,7 @@
 
 #define LIMIT 1e-7
 
-/* SIMPLE ARITHMETIC OPERATIONS */
+/** @brief 基础算术运算测试。 */
 
 TEST(calculate, simple_1) {
   s21::Calculation calc;
@@ -123,7 +123,7 @@ TEST(calculate, simple_13) {
   EXPECT_EQ(result, -10);
 }
 
-/* ARITHMETIC OPERATIONS WITH X VARIABLE */
+/** @brief 含变量 `x` 的算术运算测试。 */
 
 TEST(calculate, x_var_1) {
   s21::Calculation calc;
@@ -170,7 +170,7 @@ TEST(calculate, x_var_5) {
   EXPECT_TRUE(std::isnan(result));
 }
 
-/* POW AND SQRT */
+/** @brief 幂运算与平方根测试。 */
 
 TEST(calculate, pow_sqrt_1) {
   s21::Calculation calc;
@@ -226,7 +226,7 @@ TEST(calculate, pow_sqrt_6) {
   EXPECT_TRUE(std::isnan(result));
 }
 
-/* TRIGONOMETRY FUNCTIONS */
+/** @brief 三角函数测试。 */
 
 TEST(calculate, trigonometry_1) {
   s21::Calculation calc;
@@ -291,7 +291,7 @@ TEST(calculate, trigonometry_7) {
   EXPECT_NEAR(result, 2.5703698, LIMIT);
 }
 
-/* LOGARITHMIC FUNCTIONS */
+/** @brief 对数函数测试。 */
 
 TEST(calculate, log_1) {
   s21::Calculation calc;
@@ -320,7 +320,7 @@ TEST(calculate, log_3) {
   EXPECT_EQ(result, 1);
 }
 
-/* SCIENTIFIC NOTATION */
+/** @brief 科学计数法测试。 */
 
 TEST(calculate, sci_notation_1) {
   s21::Calculation calc;
@@ -349,7 +349,7 @@ TEST(calculate, sci_notation_3) {
   EXPECT_TRUE(std::isnan(result));
 }
 
-/* MIXED OPERATIONS */
+/** @brief 混合运算测试。 */
 
 TEST(calculate, mixed_1) {
   s21::Calculation calc;

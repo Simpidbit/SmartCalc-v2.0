@@ -42,7 +42,7 @@ long double Calculation::Calculate(s21::Lexeme &current_operator,
   long double b = 0;
   numbers.pop();
 
-  /* operations that require two operands */
+  /// 需要两个操作数的运算
   if (current_operator.priority == Priority::kPriority_1 ||
       current_operator.priority == Priority::kPriority_2) {
     b = numbers.top();
@@ -55,7 +55,8 @@ long double Calculation::Calculate(s21::Lexeme &current_operator,
       result = b * a;
     } else if (current_operator.value == "/") {
       result = b / a;
-    } else if (current_operator.value == "%") { /* mod */
+    } else if (current_operator.value == "%") {
+      /// 取模运算
       if (a == 0.0) {
         result = NAN;
       } else {
@@ -63,29 +64,39 @@ long double Calculation::Calculate(s21::Lexeme &current_operator,
       }
     }
 
-    /* operations that require one operand (except pow) */
+    /// 需要一个操作数的运算（幂运算除外）
   } else {
-    if (current_operator.value == "r") { /* sqrt */
+    if (current_operator.value == "r") {
+      /// 平方根
       result = sqrt(a);
-    } else if (current_operator.value == "^") { /* pow */
+    } else if (current_operator.value == "^") {
+      /// 幂运算
       b = numbers.top();
       numbers.pop();
       result = pow(b, a);
-    } else if (current_operator.value == "s") { /* sin */
+    } else if (current_operator.value == "s") {
+      /// 正弦
       result = sinl(a);
-    } else if (current_operator.value == "c") { /* cos */
+    } else if (current_operator.value == "c") {
+      /// 余弦
       result = cosl(a);
-    } else if (current_operator.value == "t") { /* tan */
+    } else if (current_operator.value == "t") {
+      /// 正切
       result = tanl(a);
-    } else if (current_operator.value == "S") { /* asin */
+    } else if (current_operator.value == "S") {
+      /// 反正弦
       result = asinl(a);
-    } else if (current_operator.value == "C") { /* acos */
+    } else if (current_operator.value == "C") {
+      /// 反余弦
       result = acosl(a);
-    } else if (current_operator.value == "T") { /* atan */
+    } else if (current_operator.value == "T") {
+      /// 反正切
       result = atanl(a);
-    } else if (current_operator.value == "l") { /* ln */
+    } else if (current_operator.value == "l") {
+      /// 自然对数
       result = logl(a);
-    } else if (current_operator.value == "L") { /* log */
+    } else if (current_operator.value == "L") {
+      /// 常用对数
       result = log10l(a);
     }
   }

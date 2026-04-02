@@ -5,8 +5,7 @@ using namespace s21;
 void ReversePolishNotation::Convert(std::string &str) {
   std::stack<Lexeme> operators;
 
-  size_t move_iter = 1;  ///< value to move the iterator
-                         ///< in the string after parsing a lexeme
+  size_t move_iter = 1;  ///< 解析完一个词法单元后，字符串迭代器需要前进的步数。
 
   std::string::iterator symbol = str.begin();
   while (symbol != str.end()) {
@@ -31,7 +30,7 @@ void ReversePolishNotation::Convert(std::string &str) {
 size_t ReversePolishNotation::ParseNumber(std::string::iterator it) {
   Lexeme new_lexeme;
 
-  /* check if a lexeme is a number or exponential notation or x */
+  /// 判断当前词法单元是否为数字、科学计数法数字或变量 x
   while (std::isdigit(*it) || *it == '.' || *it == 'e' ||
          (*it == '-' && *(it - 1) == 'e') || (*it == '+' && *(it - 1) == 'e') ||
          *it == 'x') {
@@ -50,7 +49,7 @@ void ReversePolishNotation::ParseOperator(std::stack<Lexeme> &operators_stack,
                                           std::string &str) {
   Lexeme new_element(*it, GetPriority(it), LexemeType::kOperator);
 
-  /* if `+` or `-` is an unary sign, push 0 to RPN list */
+  /// 如果 `+` 或 `-` 是一元符号，则先向逆波兰列表压入 0
   if (IsUnary(it, str)) {
     Lexeme add_zero('0', Priority::kPriority_0, LexemeType::kNumber);
     rpn_list_.push_back(add_zero);
@@ -59,13 +58,13 @@ void ReversePolishNotation::ParseOperator(std::stack<Lexeme> &operators_stack,
   if (operators_stack.empty()) {
     operators_stack.push(new_element);
 
-    /* if stack is not empty */
   } else {
+    /// 如果运算符栈非空
     if (new_element.priority > operators_stack.top().priority) {
       operators_stack.push(new_element);
     } else {
-      /* if current element priority is less or equal then top element priority,
-       * pop and add top lexeme to the RPN list until '(' is met */
+      /// 当当前元素优先级小于或等于栈顶元素优先级时，
+      /// 持续弹出栈顶并加入逆波兰列表，直到遇到 `(`。
       while (!operators_stack.empty() &&
              (new_element.priority <= operators_stack.top().priority) &&
              operators_stack.top().value != "(") {
@@ -105,7 +104,8 @@ Priority ReversePolishNotation::GetPriority(std::string::iterator it) {
     element_priority = Priority::kPriority_1;
   } else if (*it == '*' || *it == '/' || *it == '%') {
     element_priority = Priority::kPriority_2;
-  } else if (*it == '^' || *it == 'r') { /* pow and sqrt */
+  } else if (*it == '^' || *it == 'r') {
+    /// 幂运算与平方根
     element_priority = Priority::kPriority_3;
   } else {
     element_priority = Priority::kPriority_4;
@@ -116,12 +116,12 @@ Priority ReversePolishNotation::GetPriority(std::string::iterator it) {
 bool ReversePolishNotation::IsUnary(std::string::iterator it,
                                     std::string &str) {
   if (*it == '+' || *it == '-') {
-    /* if the operator is first in the string */
+    /// 如果该运算符位于字符串开头
     if (it == str.begin()) {
       return true;
     }
 
-    /* if the operator follows '(' */
+    /// 如果该运算符紧跟在左括号之后
     if (*(it - 1) == '(') {
       return true;
     }

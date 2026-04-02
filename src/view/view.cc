@@ -404,8 +404,8 @@ void View::BackspaceClicked() {
       ChopString(1);
       open_parenthesis_clicked_--;
 
-    } else { /* if number */
-
+    } else {
+      /// 如果当前删除的是数字
       ChopString(1);
     }
 
@@ -420,8 +420,8 @@ void View::BackspaceClicked() {
       x_clicked_ = GetXStatus(str);
     }
 
-  } else { /* string is empty */
-
+  } else {
+    /// 如果字符串已经为空
     ClearButtonClicked();
   }
 }
@@ -447,11 +447,11 @@ bool View::GetOperatorStatus(QString::ConstIterator str) {
 }
 
 bool View::GetZeroStatus(QString::ConstIterator str) {
-  /* if removed symbol isn't point */
+  /// 如果当前字符不是小数点
   if (!str->isNull() && *str == '0') {
     return false;
 
-    /* if removed symbol is point */
+  /// 如果当前字符是小数点
   } else if (!str->isNull() && *str == '.') {
     if (*(--str) == '0') {
       if (!(str - 1)->isNull() && (*(str - 1) == '+' || *(str - 1) == '-' ||
@@ -506,7 +506,7 @@ void View::EqualButtonClicked() {
 }
 
 void View::SetResult(long double &result) {
-  /* clear all flags */
+  /// 清空所有输入状态标记
   ClearButtonClicked();
 
   if (std::isinf(result) || std::isnan(result)) {
@@ -515,17 +515,17 @@ void View::SetResult(long double &result) {
   } else {
     long double truncated_result = truncl(result);
 
-    /* if result is float */
+    /// 如果结果为浮点数
     if (fabs(result - truncated_result) > 1e-7) {
       string_to_calculate_ = TruncateZeros(result);
       point_clicked_ = true;
 
-      /* if result is integer */
     } else {
+      /// 如果结果为整数
       string_to_calculate_ = QString::number(result, 'L', 0);
     }
 
-    /* if result is too long for display window, use scientific notation */
+    /// 如果结果过长超出显示区域，则使用科学计数法
     if (string_to_calculate_.length() >= 21) {
       string_to_calculate_ = QString::number(result, 'e', 0);
       e_clicked_ = true;
@@ -560,7 +560,7 @@ QString View::TruncateZeros(long double &value) {
 }
 
 void View::OpenGraphWindow() {
-  /* if the window isn't open */
+  /// 如果绘图窗口尚未打开
   if (graph_ == nullptr) {
     graph_ = new Graph(this);
 
@@ -572,13 +572,13 @@ void View::OpenGraphWindow() {
     graph_->move(main_window_x + this->width() + 20, main_window_y);
     graph_->show();
 
-    /* if the window is already open */
   } else {
+    /// 如果绘图窗口已经打开
     graph_->raise();
     graph_->activateWindow();
   }
 
-  /* if expression is valid */
+  /// 如果当前表达式合法，则执行绘图
   if (open_parenthesis_clicked_ == 0 && string_to_calculate_.length() != 0 &&
       operator_clicked_ == false) {
     graph_->SetExpression(string_to_show_);
@@ -595,8 +595,8 @@ void View::OpenGraphWindow() {
     graph_->Clear();
     graph_->SetExpression("invalid input");
 
-    /* input string is empty */
   } else {
+    /// 如果输入字符串为空，则仅清空图像
     graph_->Clear();
   }
 }
