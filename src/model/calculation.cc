@@ -2,6 +2,14 @@
 
 using namespace s21;
 
+/**
+ * @brief 解析并计算输入表达式。
+ * @details 先将中缀表达式转换为逆波兰表达式，再遍历逆波兰序列：
+ * 数字（含变量 x）入栈，运算符触发计算并回压结果，最终栈顶即为表达式结果。
+ * 当数值转换越界时，结果置为 `NAN` 并提前返回。
+ * @param expression 待计算表达式。
+ * @param x_value 变量 x 的替换值。
+ */
 void Calculation::Parse(std::string &expression, long double x_value) {
   rpn_.Convert(expression);
 
@@ -35,6 +43,15 @@ void Calculation::Parse(std::string &expression, long double x_value) {
   numbers.pop();
 }
 
+/**
+ * @brief 根据当前运算符从栈中取值并执行一次运算。
+ * @details 对二元运算符（`+ - * / % ^`）与一元函数运算符
+ * （`r s c t S C T l L`）分别处理。取模按整数取模语义执行，
+ * 当模除数为 0 时返回 `NAN`。
+ * @param current_operator 当前待执行运算符。
+ * @param numbers 操作数栈。
+ * @return long double 单次运算结果。
+ */
 long double Calculation::Calculate(s21::Lexeme &current_operator,
                                    std::stack<long double> &numbers) {
   long double result = 0;
@@ -92,4 +109,8 @@ long double Calculation::Calculate(s21::Lexeme &current_operator,
   return result;
 }
 
+/**
+ * @brief 获取最近一次解析计算结果。
+ * @return long double 计算结果。
+ */
 long double Calculation::GetResult() { return calculation_result_; }

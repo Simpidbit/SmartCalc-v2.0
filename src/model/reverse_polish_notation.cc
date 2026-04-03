@@ -2,6 +2,13 @@
 
 using namespace s21;
 
+/**
+ * @brief 将中缀表达式转换为逆波兰表达式（RPN）。
+ * @details 使用 Shunting-yard 算法：顺序扫描输入字符串，
+ * 数字直接输出到 RPN 列表，运算符依据优先级在运算符栈中进出，
+ * 括号触发局部出栈，扫描结束后将栈中剩余运算符全部输出。
+ * @param str 待转换的中缀表达式。
+ */
 void ReversePolishNotation::Convert(std::string &str) {
   std::stack<Lexeme> operators;
 
@@ -28,6 +35,13 @@ void ReversePolishNotation::Convert(std::string &str) {
   }
 }
 
+/**
+ * @brief 解析数字（含小数、科学计数法、变量 x）并写入 RPN 列表。
+ * @details 连续读取数字相关字符，支持 `e` 指数表示中紧随其后的符号位，
+ * 例如 `1.2e-3`。解析完成后返回外层迭代器应前进的位移。
+ * @param it 指向当前数字起始位置的迭代器。
+ * @return size_t 外层迭代器位移长度。
+ */
 size_t ReversePolishNotation::ParseNumber(std::string::iterator it) {
   Lexeme new_lexeme;
 
@@ -45,6 +59,15 @@ size_t ReversePolishNotation::ParseNumber(std::string::iterator it) {
   return (move_iter);
 }
 
+/**
+ * @brief 解析并处理一个运算符。
+ * @details 当 `+/-` 被识别为一元符号时，先向 RPN 输出一个 `0`，
+ * 将其转化为二元运算语义；随后依据优先级规则处理运算符栈：
+ * 当前运算符优先级低于或等于栈顶时持续出栈（直到左括号或栈空）。
+ * @param operators_stack 运算符栈。
+ * @param it 指向当前运算符的迭代器。
+ * @param str 原始输入表达式。
+ */
 void ReversePolishNotation::ParseOperator(std::stack<Lexeme> &operators_stack,
                                           std::string::iterator it,
                                           std::string &str) {
@@ -78,6 +101,12 @@ void ReversePolishNotation::ParseOperator(std::stack<Lexeme> &operators_stack,
   }
 }
 
+/**
+ * @brief 处理右括号。
+ * @details 持续弹出运算符并输出到 RPN 列表，直到遇到左括号；
+ * 左括号仅用于分组控制，不写入输出列表。
+ * @param operators_stack 运算符栈。
+ */
 void ReversePolishNotation::CloseParenth(std::stack<Lexeme> &operators_stack) {
   Lexeme element;
   while (!operators_stack.empty()) {
@@ -91,12 +120,23 @@ void ReversePolishNotation::CloseParenth(std::stack<Lexeme> &operators_stack) {
   }
 }
 
+/**
+ * @brief 将左括号压入运算符栈。
+ * @param operators_stack 运算符栈。
+ */
 void ReversePolishNotation::PushOpenParenth(
     std::stack<Lexeme> &operators_stack) {
   Lexeme parenthesis('(', Priority::kPriority_0, LexemeType::kOperator);
   operators_stack.push(parenthesis);
 }
 
+/**
+ * @brief 获取当前符号的优先级。
+ * @details `+/-` 为一级，`*//%` 为二级，`^/r` 为三级，
+ * 其余函数类符号为四级。
+ * @param it 指向当前符号的迭代器。
+ * @return Priority 当前符号对应优先级。
+ */
 Priority ReversePolishNotation::GetPriority(std::string::iterator it) {
   Priority element_priority;
   if (*it == '(') {
@@ -113,6 +153,14 @@ Priority ReversePolishNotation::GetPriority(std::string::iterator it) {
   return element_priority;
 }
 
+/**
+ * @brief 判断当前 `+` 或 `-` 是否为一元符号。
+ * @details 在表达式起始位置，或紧跟左括号 `(` 时，
+ * 视为一元正负号。
+ * @param it 指向当前符号的迭代器。
+ * @param str 原始输入表达式。
+ * @return bool 是一元符号返回 `true`，否则返回 `false`。
+ */
 bool ReversePolishNotation::IsUnary(std::string::iterator it,
                                     std::string &str) {
   if (*it == '+' || *it == '-') {
