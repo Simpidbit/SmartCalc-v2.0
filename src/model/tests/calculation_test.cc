@@ -1,3 +1,8 @@
+/**
+ * @file calculation_test.cc
+ * @brief Unit tests for expression parsing and calculation in SmartCalc.
+ */
+
 #include "../calculation.h"
 
 #include <gtest/gtest.h>

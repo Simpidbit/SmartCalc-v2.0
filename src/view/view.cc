@@ -1,9 +1,20 @@
+/**
+ * @file view.cc
+ * @brief Implements the main calculator window and its UI event handlers.
+ */
+
 #include "view.h"
 
 #include <iostream>
 
 #include "./ui_view.h"
 
+/**
+ * @brief Constructs the main calculator window and connects UI signals.
+ * @param parent Pointer to the parent widget.
+ * @param controller Pointer to the controller used for calculations and
+ * plotting.
+ */
 View::View(QWidget *parent, s21::Controller *controller)
     : QMainWindow(parent), controller_(controller), ui_(new Ui::View) {
   ui_->setupUi(this);
@@ -64,8 +75,14 @@ View::View(QWidget *parent, s21::Controller *controller)
   connect(ui_->graphing, SIGNAL(clicked()), this, SLOT(OpenGraphWindow()));
 }
 
+/**
+ * @brief Destroys the main window and releases the generated UI.
+ */
 View::~View() { delete ui_; }
 
+/**
+ * @brief Resets the current expression, display text, and input state flags.
+ */
 void View::ClearButtonClicked() {
   string_to_calculate_.clear();
   string_to_show_.clear();
@@ -80,6 +97,9 @@ void View::ClearButtonClicked() {
   e_clicked_ = false;
 }
 
+/**
+ * @brief Appends a digit to the current expression when input rules allow it.
+ */
 void View::NumberClicked() {
   QPushButton *button = qobject_cast<QPushButton *>(sender());
 
@@ -141,6 +161,9 @@ void View::NumberClicked() {
   }
 }
 
+/**
+ * @brief Handles insertion of `+` and `-` operators into the expression.
+ */
 void View::PlusMinusOperatorClicked() {
   if (string_to_calculate_.length() != 0 && !operator_clicked_ &&
       string_to_calculate_.back() != '.') {
@@ -168,6 +191,9 @@ void View::PlusMinusOperatorClicked() {
   }
 }
 
+/**
+ * @brief Handles insertion of multiplication and division operators.
+ */
 void View::MulDivOperatorClicked() {
   if (!operator_clicked_ && string_to_calculate_.length() != 0 &&
       string_to_calculate_.back() != '(' &&
@@ -190,6 +216,9 @@ void View::MulDivOperatorClicked() {
   }
 }
 
+/**
+ * @brief Inserts a mathematical function call and its opening parenthesis.
+ */
 void View::MathFunctionClicked() {
   bool flag = false;
   if (string_to_calculate_.length() != 0) {
@@ -220,6 +249,9 @@ void View::MathFunctionClicked() {
   }
 }
 
+/**
+ * @brief Inserts an opening parenthesis when it is valid in the current state.
+ */
 void View::OpenParenthesisButtonClicked() {
   if (string_to_calculate_.length() == 0) {
     QPushButton *button = qobject_cast<QPushButton *>(sender());
@@ -241,6 +273,9 @@ void View::OpenParenthesisButtonClicked() {
   }
 }
 
+/**
+ * @brief Inserts a closing parenthesis if there is an unmatched opening one.
+ */
 void View::CloseParenthesisButtonClicked() {
   if (open_parenthesis_clicked_ > 0 && string_to_calculate_.back() != '.' &&
       (num_clicked_ || string_to_calculate_.back() == ')' || x_clicked_)) {
@@ -253,6 +288,9 @@ void View::CloseParenthesisButtonClicked() {
   }
 }
 
+/**
+ * @brief Inserts a decimal point into the current numeric lexeme.
+ */
 void View::PointButtonClicked() {
   if (num_clicked_ && !point_clicked_ && string_to_calculate_.back() != ')' &&
       !e_clicked_) {
@@ -264,6 +302,9 @@ void View::PointButtonClicked() {
   }
 }
 
+/**
+ * @brief Inserts the modulo operator into the current expression.
+ */
 void View::ModButtonClicked() {
   if (!operator_clicked_ && (num_clicked_ || x_clicked_) &&
       string_to_calculate_.back() != '.' && !e_clicked_) {
@@ -277,6 +318,9 @@ void View::ModButtonClicked() {
   }
 }
 
+/**
+ * @brief Inserts the power operator followed by an opening parenthesis.
+ */
 void View::PowButtonClicked() {
   if (string_to_calculate_.length() != 0 &&
       string_to_calculate_.back() != '.' &&
@@ -292,6 +336,9 @@ void View::PowButtonClicked() {
   }
 }
 
+/**
+ * @brief Inserts the square root function token into the expression.
+ */
 void View::SqrtButtonClicked() {
   if (string_to_calculate_.length() == 0) {
     QPushButton *button = qobject_cast<QPushButton *>(sender());
@@ -313,6 +360,9 @@ void View::SqrtButtonClicked() {
   }
 }
 
+/**
+ * @brief Inserts the variable `x` into the expression when allowed.
+ */
 void View::XButtonClicked() {
   if ((string_to_calculate_.length() == 0 || operator_clicked_) ||
       (open_parenthesis_clicked_ > 0 && !num_clicked_ && !x_clicked_)) {
@@ -326,6 +376,9 @@ void View::XButtonClicked() {
   }
 }
 
+/**
+ * @brief Inserts scientific notation marker `e` for the current number.
+ */
 void View::EButtonClicked() {
   if (!e_clicked_ && num_clicked_ && !point_clicked_) {
     QPushButton *button = qobject_cast<QPushButton *>(sender());
@@ -336,11 +389,18 @@ void View::EButtonClicked() {
   }
 }
 
+/**
+ * @brief Removes a given number of characters from both expression strings.
+ * @param number_to_chop Number of trailing characters to remove.
+ */
 void View::ChopString(size_t number_to_chop) {
   string_to_calculate_.chop(number_to_chop);
   string_to_show_.chop(number_to_chop);
 }
 
+/**
+ * @brief Removes the last entered token and restores the related state flags.
+ */
 void View::BackspaceClicked() {
   if (string_to_calculate_.length() != 0) {
     if (string_to_calculate_.length() == 1) {
@@ -426,6 +486,13 @@ void View::BackspaceClicked() {
   }
 }
 
+/**
+ * @brief Checks whether the current numeric lexeme already contains a decimal
+ * point.
+ * @param str Iterator positioned at the last character of the expression.
+ * @return `true` if a decimal point exists in the current lexeme, otherwise
+ * `false`.
+ */
 bool View::GetPointStatus(QString::ConstIterator str) {
   while (!str->isNull() && *str != '+' && *str != '-' && *str != '*' &&
          *str != '/' && *str != '(' && *str != ')') {
@@ -438,6 +505,11 @@ bool View::GetPointStatus(QString::ConstIterator str) {
   return false;
 }
 
+/**
+ * @brief Checks whether the last character is a binary operator.
+ * @param str Iterator positioned at the last character of the expression.
+ * @return `true` if the current character is an operator, otherwise `false`.
+ */
 bool View::GetOperatorStatus(QString::ConstIterator str) {
   if (!str->isNull() &&
       (*str == '+' || *str == '-' || *str == '*' || *str == '/')) {
@@ -446,6 +518,12 @@ bool View::GetOperatorStatus(QString::ConstIterator str) {
   return false;
 }
 
+/**
+ * @brief Determines whether leading zero protection should remain enabled.
+ * @param str Iterator positioned at the last character of the expression.
+ * @return `true` if entering another leading zero is allowed, otherwise
+ * `false`.
+ */
 bool View::GetZeroStatus(QString::ConstIterator str) {
   /* if removed symbol isn't point */
   if (!str->isNull() && *str == '0') {
@@ -466,6 +544,12 @@ bool View::GetZeroStatus(QString::ConstIterator str) {
   return true;
 }
 
+/**
+ * @brief Checks whether the last character belongs to a numeric lexeme.
+ * @param str Iterator positioned at the last character of the expression.
+ * @return `true` if the current character is a digit or decimal point,
+ * otherwise `false`.
+ */
 bool View::GetNumStatus(QString::ConstIterator str) {
   if (!str->isNull() && str->isDigit() || *str == '.') {
     return true;
@@ -473,6 +557,11 @@ bool View::GetNumStatus(QString::ConstIterator str) {
   return false;
 }
 
+/**
+ * @brief Checks whether the last token is the variable `x`.
+ * @param str Iterator positioned at the last character of the expression.
+ * @return `true` if the current character is `x`, otherwise `false`.
+ */
 bool View::GetXStatus(QString::ConstIterator str) {
   if (!str->isNull() && *str == 'x') {
     return true;
@@ -480,6 +569,12 @@ bool View::GetXStatus(QString::ConstIterator str) {
   return false;
 }
 
+/**
+ * @brief Checks whether the current number uses scientific notation.
+ * @param str Iterator positioned at the last character of the expression.
+ * @return `true` if an `e` marker is part of the current numeric lexeme,
+ * otherwise `false`.
+ */
 bool View::GetEStatus(QString::ConstIterator str) {
   if (!str->isNull() && *str == 'e') {
     return true;
@@ -493,6 +588,9 @@ bool View::GetEStatus(QString::ConstIterator str) {
   return false;
 }
 
+/**
+ * @brief Evaluates the current expression and sends the result to the display.
+ */
 void View::EqualButtonClicked() {
   if (open_parenthesis_clicked_ == 0 && string_to_calculate_.length() != 0 &&
       operator_clicked_ == false) {
@@ -505,6 +603,10 @@ void View::EqualButtonClicked() {
   }
 }
 
+/**
+ * @brief Formats a calculation result and updates the display state.
+ * @param result Result value returned by the controller.
+ */
 void View::SetResult(long double &result) {
   /* clear all flags */
   ClearButtonClicked();
@@ -547,6 +649,11 @@ void View::SetResult(long double &result) {
   }
 }
 
+/**
+ * @brief Removes redundant trailing zeroes from a floating-point string.
+ * @param value Numeric value to format.
+ * @return QString containing the trimmed decimal representation.
+ */
 QString View::TruncateZeros(long double &value) {
   QString str_value = QString::number(value, 'f', 7);
   QString::iterator it = (str_value.end() - 1);
@@ -559,6 +666,9 @@ QString View::TruncateZeros(long double &value) {
   return str_value;
 }
 
+/**
+ * @brief Opens the graph window and plots the current expression when valid.
+ */
 void View::OpenGraphWindow() {
   /* if the window isn't open */
   if (graph_ == nullptr) {
@@ -601,8 +711,14 @@ void View::OpenGraphWindow() {
   }
 }
 
+/**
+ * @brief Resets the stored graph window pointer after the dialog closes.
+ */
 void View::GraphWindowClosed() { graph_ = nullptr; }
 
+/**
+ * @brief Prints the current input flags and expression state for debugging.
+ */
 void View::GetAllFlags() {
   std::cout << "-----------------------------" << std::endl;
   std::cout << "string: " << string_to_calculate_.toStdString() << std::endl;

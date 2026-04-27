@@ -1,7 +1,18 @@
+/**
+ * @file format_string.cc
+ * @brief Implements conversion of UI expressions into parser-friendly strings.
+ */
+
 #include "format_string.h"
 
 namespace s21 {
 
+/**
+ * @brief Converts the UI expression into a compact internal representation.
+ * @details Replaces multi-character function names with single-character
+ * markers expected by the parser while preserving numbers, operators, and the
+ * variable `x`.
+ */
 void FormatString::Convert() {
   QString::iterator it = q_str_.begin();
   size_t iter_move = 0;

@@ -1,3 +1,8 @@
+/**
+ * @file graph.cc
+ * @brief Implements the dialog used to display function plots.
+ */
+
 #include "graph.h"
 
 #include <qcustomplot.h>
@@ -5,13 +10,24 @@
 #include "ui_graph.h"
 #include "view.h"
 
+/**
+ * @brief Constructs the graph dialog and initializes its UI.
+ * @param parent Pointer to the parent widget.
+ */
 Graph::Graph(QWidget *parent) : QDialog(parent), ui_(new Ui::Graph) {
   ui_->setupUi(this);
   setWindowTitle("Graph");
 }
 
+/**
+ * @brief Destroys the graph dialog and releases the generated UI.
+ */
 Graph::~Graph() { delete ui_; }
 
+/**
+ * @brief Draws the graph using the provided coordinate vectors.
+ * @param coordinates Pair of vectors containing x-values and y-values.
+ */
 void Graph::BuildPlot(
     std::pair<std::vector<double>, std::vector<double>> &coordinates) {
   ui_->plot->clearGraphs();
@@ -37,10 +53,17 @@ void Graph::BuildPlot(
   ui_->plot->setInteraction(QCP::iRangeDrag, true);
 }
 
+/**
+ * @brief Updates the expression label shown in the graph dialog.
+ * @param expression Expression text to display.
+ */
 void Graph::SetExpression(QString expression) {
   ui_->expression_to_plot->setText(expression);
 }
 
+/**
+ * @brief Clears the expression label and removes plotted data.
+ */
 void Graph::Clear() {
   ui_->expression_to_plot->clear();
   ui_->plot->clearGraphs();
@@ -48,6 +71,10 @@ void Graph::Clear() {
   ui_->plot->update();
 }
 
+/**
+ * @brief Returns the current x-axis range selected in the dialog controls.
+ * @return Pair containing the minimum and maximum x-values.
+ */
 std::pair<double, double> Graph::GetXRange() {
   std::pair<double, double> x_range;
   x_range.first = ui_->spin_box_min_x->value();
