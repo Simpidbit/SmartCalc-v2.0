@@ -17,6 +17,8 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS PrintSupport REQUIRED)
 
 include_directories(${CMAKE_SOURCE_DIR}/view)
 include_directories(${CMAKE_SOURCE_DIR}/model)
+include_directories(${CMAKE_SOURCE_DIR}/history)
+include_directories(${CMAKE_SOURCE_DIR}/export)
 
 set(PROJECT_SOURCES
         main.cc
@@ -30,6 +32,8 @@ set(PROJECT_SOURCES
         view/qcustomplot.cc
         view/format_string.h
         view/format_string.cc
+        view/keyboard_adapter.h
+        view/keyboard_adapter.cc
         controller/controller.h
         model/calculation.h
         model/calculation.cc
@@ -37,6 +41,13 @@ set(PROJECT_SOURCES
         model/reverse_polish_notation.h
         model/reverse_polish_notation.cc
         model/plot_graph.h
+        history/history_record.h
+        history/history_store.h
+        history/history_store.cc
+        history/history_manager.h
+        history/history_manager.cc
+        export/graph_export.h
+        export/graph_export.cc
         resourses.qrc
 )
 

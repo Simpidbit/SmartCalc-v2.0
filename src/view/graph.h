@@ -4,6 +4,9 @@
 #include <qcustomplot.h>
 
 #include <QDialog>
+#include <QPushButton>
+
+#include "../export/graph_export.h"
 
 namespace Ui {
 class Graph;
@@ -50,6 +53,17 @@ class Graph : public QDialog {
   void Clear();
 
   /**
+   * @brief 将当前有效函数图像导出为 PNG 或 PDF。
+   */
+  void ExportGraph();
+
+  /**
+   * @brief 判断当前窗口是否存在可导出的有效曲线。
+   * @return 存在有效曲线时返回 true。
+   */
+  bool HasValidGraph() const;
+
+  /**
    * @brief 获取当前图像的 `x` 轴范围。
    * @return 返回表示 `x` 轴区间的二元组。
    */
@@ -57,6 +71,9 @@ class Graph : public QDialog {
 
  private:
   Ui::Graph *ui_;  ///< 窗口界面实例。
+  s21::GraphExporter exporter_;  ///< 图像导出器。
+  QPushButton *export_button_ = nullptr;  ///< 导出入口按钮。
+  bool has_valid_curve_ = false;  ///< 最近一次绘图是否产生有效曲线。
 };
 
 #endif

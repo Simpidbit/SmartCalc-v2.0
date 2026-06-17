@@ -2,11 +2,14 @@
 #define CPP3_SMARTCALC_V2_0_SRC_VIEW_VIEW_H_
 
 #include <QMainWindow>
+#include <QPushButton>
 #include <QStack>
 
 #include "../controller/controller.h"
+#include "../history/history_manager.h"
 #include "format_string.h"
 #include "graph.h"
+#include "keyboard_adapter.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -34,6 +37,9 @@ class View : public QMainWindow {
    * @brief 默认析构函数。
    */
   ~View();
+
+ protected:
+  void keyPressEvent(QKeyEvent *event) override;
 
  public slots:
   /**
@@ -118,6 +124,11 @@ class View : public QMainWindow {
    */
   void OpenGraphWindow();
 
+  /**
+   * @brief 打开计算历史记录窗口。
+   */
+  void OpenHistoryWindow();
+
  private slots:
 
   /**
@@ -182,6 +193,51 @@ class View : public QMainWindow {
   void SetResult(long double &result);
 
   /**
+   * @brief 根据键盘动作复用现有按钮输入槽函数。
+   * @param action 由 KeyboardAdapter 解析出的键盘动作。
+   * @return 若动作已被处理则返回 true。
+   */
+  bool HandleKeyboardAction(const s21::KeyboardAction &action);
+
+  /**
+   * @brief 判断当前焦点是否允许主窗口处理表达式键盘输入。
+   * @return 若可以处理表达式键盘输入则返回 true。
+   */
+  bool IsExpressionKeyboardFocusAllowed() const;
+
+  /**
+   * @brief 获取键盘动作对应的现有按钮。
+   * @param action 键盘动作。
+   * @return 对应按钮指针，不存在时返回 nullptr。
+   */
+  QPushButton *ButtonForKeyboardAction(
+      const s21::KeyboardAction &action) const;
+
+  /**
+   * @brief 追加幂运算符，支持按钮的分组形式和键盘的普通形式。
+   * @param open_group 若为 true，则追加 `^(` 并维护括号计数。
+   */
+  void AppendPowerOperator(bool open_group);
+
+  /**
+   * @brief 根据当前内部表达式重建输入状态标记。
+   */
+  void RebuildInputState();
+
+  /**
+   * @brief 将历史记录回填到主界面。
+   * @param record 待回填历史记录。
+   */
+  void LoadHistoryRecordToView(const s21::HistoryRecord &record);
+
+  /**
+   * @brief 保存有效计算历史记录。
+   */
+  void SaveHistoryRecord(const QString &expression,
+                         const QString &display_expression,
+                         const QString &x_value, long double result);
+
+  /**
    * @brief 去掉浮点数末尾多余的 0。
    * @param value 待处理的数值。
    * @return 去除尾部多余 0 后的字符串。
@@ -197,6 +253,8 @@ class View : public QMainWindow {
   Ui::View *ui_;                 ///< 指向界面实例的指针。
   Graph *graph_ = nullptr;       ///< 指向绘图窗口的指针。
   s21::Controller *controller_;  ///< 指向 Controller 实例的指针。
+  s21::HistoryManager history_manager_;  ///< 历史记录管理器。
+  QPushButton *history_button_ = nullptr;  ///< 历史记录入口按钮。
   QString string_to_calculate_;  ///< 供解析和计算使用的表达式字符串。
   QString string_to_show_;       ///< 用于在界面中展示的表达式字符串。
   bool num_clicked_ = false;       ///< 标记最后输入的词法单元是否为数字。

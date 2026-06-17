@@ -1,17 +1,40 @@
 #include "view.h"
 
+#include <QApplication>
+#include <QDateTime>
+#include <QDialog>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QMessageBox>
+#include <QRegularExpression>
+#include <QRegularExpressionValidator>
+#include <QStatusBar>
+#include <QVBoxLayout>
+
+#include <algorithm>
+#include <cmath>
 #include <iostream>
+#include <optional>
 
 #include "./ui_view.h"
 
 View::View(QWidget *parent, s21::Controller *controller)
-    : QMainWindow(parent), controller_(controller), ui_(new Ui::View) {
+    : QMainWindow(parent), ui_(new Ui::View), controller_(controller) {
   ui_->setupUi(this);
+  setFocusPolicy(Qt::StrongFocus);
 
   QRegularExpressionValidator *regexXValidator =
       new QRegularExpressionValidator(QRegularExpression(
-          "^(-?100000000000(\\.0{1,6})?|(-?[0-9]{1,11})(\\.[0-9]{1,6})?)$"));
+          "^(-?100000000000(\\.0{1,6})?|(-?[0-9]{1,11})(\\.[0-9]{1,6})?)$"),
+                                      this);
   ui_->x_value_input->setValidator(regexXValidator);
+
+  history_button_ = new QPushButton("History", ui_->centralwidget);
+  history_button_->setGeometry(72, 130, 125, 30);
+  history_button_->setToolTip("show calculation history");
+  history_button_->setFocusPolicy(Qt::NoFocus);
 
   std::vector<QPushButton *> num_buttons = {
       ui_->zero_button,  ui_->one_button,  ui_->two_button, ui_->three_button,
@@ -60,11 +83,32 @@ View::View(QWidget *parent, s21::Controller *controller)
   connect(ui_->backspace_button, SIGNAL(clicked()), this,
           SLOT(BackspaceClicked()));
   connect(ui_->equal_button, SIGNAL(clicked()), this,
-          SLOT(EqualButtonClicked()));
+           SLOT(EqualButtonClicked()));
   connect(ui_->graphing, SIGNAL(clicked()), this, SLOT(OpenGraphWindow()));
+  connect(history_button_, SIGNAL(clicked()), this, SLOT(OpenHistoryWindow()));
+
+  const QList<QPushButton *> buttons = findChildren<QPushButton *>();
+  for (QPushButton *button : buttons) {
+    button->setFocusPolicy(Qt::NoFocus);
+  }
 }
 
 View::~View() { delete ui_; }
+
+void View::keyPressEvent(QKeyEvent *event) {
+  if (!IsExpressionKeyboardFocusAllowed()) {
+    QMainWindow::keyPressEvent(event);
+    return;
+  }
+
+  const s21::KeyboardAction action = s21::KeyboardAdapter::HandleKey(*event);
+  if (HandleKeyboardAction(action)) {
+    event->accept();
+    return;
+  }
+
+  QMainWindow::keyPressEvent(event);
+}
 
 void View::ClearButtonClicked() {
   string_to_calculate_.clear();
@@ -278,17 +322,29 @@ void View::ModButtonClicked() {
 }
 
 void View::PowButtonClicked() {
+  AppendPowerOperator(true);
+}
+
+void View::AppendPowerOperator(bool open_group) {
   if (string_to_calculate_.length() != 0 &&
-      string_to_calculate_.back() != '.' &&
-      string_to_calculate_.back() != 'e' &&
+      string_to_calculate_.back() != '.' && string_to_calculate_.back() != 'e' &&
       (num_clicked_ || string_to_calculate_.back() == ')' ||
        string_to_calculate_.back() == 'x')) {
-    string_to_calculate_ += "^(";
-    string_to_show_ += "^(";
+    if (open_group) {
+      string_to_calculate_ += "^(";
+      string_to_show_ += "^(";
+      open_parenthesis_clicked_++;
+    } else {
+      string_to_calculate_ += "^";
+      string_to_show_ += "^";
+    }
     ui_->display->setText(string_to_show_);
-    open_parenthesis_clicked_++;
     num_clicked_ = false;
     x_clicked_ = false;
+    operator_clicked_ = true;
+    point_clicked_ = false;
+    e_clicked_ = false;
+    flag_first_zero_ = false;
   }
 }
 
@@ -363,7 +419,8 @@ void View::BackspaceClicked() {
                string_to_calculate_.back() == '+' ||
                string_to_calculate_.back() == '-' ||
                string_to_calculate_.back() == '*' ||
-               string_to_calculate_.back() == '/') {
+               string_to_calculate_.back() == '/' ||
+               string_to_calculate_.back() == '^') {
       ChopString(1);
       QString::ConstIterator str = string_to_calculate_.end() - 1;
       point_clicked_ = GetPointStatus(str);
@@ -428,7 +485,8 @@ void View::BackspaceClicked() {
 
 bool View::GetPointStatus(QString::ConstIterator str) {
   while (!str->isNull() && *str != '+' && *str != '-' && *str != '*' &&
-         *str != '/' && *str != '(' && *str != ')') {
+         *str != '/' && *str != '%' && *str != '^' && *str != '(' &&
+         *str != ')') {
     if (*str == '.') {
       return true;
       break;
@@ -440,7 +498,8 @@ bool View::GetPointStatus(QString::ConstIterator str) {
 
 bool View::GetOperatorStatus(QString::ConstIterator str) {
   if (!str->isNull() &&
-      (*str == '+' || *str == '-' || *str == '*' || *str == '/')) {
+      (*str == '+' || *str == '-' || *str == '*' || *str == '/' ||
+       *str == '%' || *str == '^')) {
     return true;
   }
   return false;
@@ -455,7 +514,8 @@ bool View::GetZeroStatus(QString::ConstIterator str) {
   } else if (!str->isNull() && *str == '.') {
     if (*(--str) == '0') {
       if (!(str - 1)->isNull() && (*(str - 1) == '+' || *(str - 1) == '-' ||
-                                   *(str - 1) == '*' || *(str - 1) == '/')) {
+                                   *(str - 1) == '*' || *(str - 1) == '/' ||
+                                   *(str - 1) == '%' || *(str - 1) == '^')) {
         return false;
 
       } else if ((str - 1)->isNull()) {
@@ -493,15 +553,110 @@ bool View::GetEStatus(QString::ConstIterator str) {
   return false;
 }
 
+bool View::HandleKeyboardAction(const s21::KeyboardAction &action) {
+  switch (action.type) {
+    case s21::KeyboardActionType::kIgnored:
+      return false;
+    case s21::KeyboardActionType::kCalculate:
+      EqualButtonClicked();
+      return true;
+    case s21::KeyboardActionType::kBackspace:
+      BackspaceClicked();
+      return true;
+    case s21::KeyboardActionType::kClear:
+      ClearButtonClicked();
+      return true;
+    case s21::KeyboardActionType::kPower:
+      AppendPowerOperator(false);
+      return true;
+    default:
+      break;
+  }
+
+  QPushButton *button = ButtonForKeyboardAction(action);
+  if (button == nullptr) {
+    return false;
+  }
+  button->click();
+  return true;
+}
+
+bool View::IsExpressionKeyboardFocusAllowed() const {
+  const QWidget *focused_widget = QApplication::focusWidget();
+  if (focused_widget == nullptr) {
+    return true;
+  }
+  return focused_widget != ui_->x_value_input &&
+         !ui_->x_value_input->isAncestorOf(focused_widget);
+}
+
+QPushButton *View::ButtonForKeyboardAction(
+    const s21::KeyboardAction &action) const {
+  switch (action.type) {
+    case s21::KeyboardActionType::kDigit:
+      switch (action.token.toLatin1()) {
+        case '0':
+          return ui_->zero_button;
+        case '1':
+          return ui_->one_button;
+        case '2':
+          return ui_->two_button;
+        case '3':
+          return ui_->three_button;
+        case '4':
+          return ui_->four_button;
+        case '5':
+          return ui_->five_button;
+        case '6':
+          return ui_->six_button;
+        case '7':
+          return ui_->seven_button;
+        case '8':
+          return ui_->eight_button;
+        case '9':
+          return ui_->nine_button;
+        default:
+          return nullptr;
+      }
+    case s21::KeyboardActionType::kPlus:
+      return ui_->plus_button;
+    case s21::KeyboardActionType::kMinus:
+      return ui_->minus_button;
+    case s21::KeyboardActionType::kMultiply:
+      return ui_->multiply_button;
+    case s21::KeyboardActionType::kDivide:
+      return ui_->divide_button;
+    case s21::KeyboardActionType::kModulo:
+      return ui_->mod_button;
+    case s21::KeyboardActionType::kPoint:
+      return ui_->point_button;
+    case s21::KeyboardActionType::kScientificE:
+      return ui_->e_button;
+    case s21::KeyboardActionType::kVariableX:
+      return ui_->x_button;
+    case s21::KeyboardActionType::kOpenParenthesis:
+      return ui_->open_parenthesis_button;
+    case s21::KeyboardActionType::kCloseParenthesis:
+      return ui_->close_parenthesis_button;
+    default:
+      return nullptr;
+  }
+}
+
 void View::EqualButtonClicked() {
   if (open_parenthesis_clicked_ == 0 && string_to_calculate_.length() != 0 &&
       operator_clicked_ == false) {
+    const QString history_expression = string_to_calculate_;
+    const QString history_display_expression = string_to_show_;
+    const QString history_x_value = ui_->x_value_input->text();
     s21::FormatString formatted_str(string_to_calculate_);
     long double x_value = ui_->x_value_input->text().toDouble();
     long double result =
         controller_->Calculate(formatted_str.GetString(), x_value);
 
     SetResult(result);
+    SaveHistoryRecord(history_expression, history_display_expression,
+                      history_x_value, result);
   }
 }
 
@@ -545,6 +700,195 @@ void View::SetResult(long double &result) {
       ClearButtonClicked();
     }
   }
+}
+
+void View::SaveHistoryRecord(const QString &expression,
+                             const QString &display_expression,
+                             const QString &x_value, long double result) {
+  if (expression.trimmed().isEmpty() || std::isinf(result) ||
+      std::isnan(result)) {
+    return;
+  }
+
+  s21::HistoryRecord record;
+  record.expression = expression;
+  record.display_expression =
+      display_expression.trimmed().isEmpty() ? expression : display_expression;
+  record.x_value = x_value.trimmed().isEmpty() ? "0" : x_value;
+  record.result = QString::number(static_cast<double>(result), 'g', 15);
+  record.created_at =
+      QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
+
+  if (!history_manager_.AppendHistory(record)) {
+    const s21::HistoryErrorInfo error = history_manager_.GetLastError();
+    statusBar()->showMessage(
+        error.message.isEmpty() ? "History save failed" : error.message, 3000);
+  }
+}
+
+void View::OpenHistoryWindow() {
+  QDialog dialog(this);
+  dialog.setWindowTitle("Calculation History");
+  dialog.resize(520, 420);
+
+  QVBoxLayout *layout = new QVBoxLayout(&dialog);
+  QLabel *title = new QLabel("Recent calculations", &dialog);
+  QListWidget *history_list = new QListWidget(&dialog);
+  QPushButton *load_button = new QPushButton("Load", &dialog);
+  QPushButton *clear_button = new QPushButton("Clear", &dialog);
+  QPushButton *close_button = new QPushButton("Close", &dialog);
+
+  QHBoxLayout *button_layout = new QHBoxLayout();
+  button_layout->addWidget(load_button);
+  button_layout->addWidget(clear_button);
+  button_layout->addStretch();
+  button_layout->addWidget(close_button);
+
+  layout->addWidget(title);
+  layout->addWidget(history_list);
+  layout->addLayout(button_layout);
+
+  auto populate_history = [this, history_list]() {
+    history_list->clear();
+    const std::vector<s21::HistoryRecord> records =
+        history_manager_.LoadRecent(100);
+    if (history_manager_.GetLastError().code != s21::HistoryErrorCode::kNone) {
+      QMessageBox::warning(this, "History",
+                           history_manager_.GetLastError().message.isEmpty()
+                               ? "Failed to read calculation history"
+                               : history_manager_.GetLastError().message);
+    }
+
+    if (records.empty()) {
+      QListWidgetItem *item = new QListWidgetItem("No calculation history");
+      item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
+      history_list->addItem(item);
+      return;
+    }
+
+    for (const s21::HistoryRecord &record : records) {
+      const QString item_text = QString("%1 = %2\nx = %3    %4")
+                                    .arg(record.display_expression,
+                                         record.result, record.x_value,
+                                         record.created_at);
+      QListWidgetItem *item = new QListWidgetItem(item_text);
+      item->setData(Qt::UserRole, record.record_id);
+      history_list->addItem(item);
+    }
+  };
+
+  connect(load_button, &QPushButton::clicked, &dialog, [&]() {
+    QListWidgetItem *item = history_list->currentItem();
+    if (item == nullptr || !item->data(Qt::UserRole).isValid()) {
+      return;
+    }
+
+    const std::optional<s21::HistoryRecord> record =
+        history_manager_.GetRecordById(item->data(Qt::UserRole).toString());
+    if (!record.has_value()) {
+      QMessageBox::warning(this, "History", "Selected history record not found");
+      return;
+    }
+    LoadHistoryRecordToView(*record);
+    dialog.accept();
+  });
+  connect(history_list, &QListWidget::itemDoubleClicked, &dialog,
+          [&](QListWidgetItem *item) {
+            if (item == nullptr || !item->data(Qt::UserRole).isValid()) {
+              return;
+            }
+
+            const std::optional<s21::HistoryRecord> record =
+                history_manager_.GetRecordById(
+                    item->data(Qt::UserRole).toString());
+            if (record.has_value()) {
+              LoadHistoryRecordToView(*record);
+              dialog.accept();
+            }
+          });
+  connect(clear_button, &QPushButton::clicked, &dialog, [&]() {
+    const QMessageBox::StandardButton answer = QMessageBox::question(
+        &dialog, "Clear History", "Clear all calculation history?");
+    if (answer != QMessageBox::Yes) {
+      return;
+    }
+    if (!history_manager_.ClearHistory()) {
+      QMessageBox::warning(&dialog, "History",
+                           history_manager_.GetLastError().message.isEmpty()
+                               ? "Failed to clear calculation history"
+                               : history_manager_.GetLastError().message);
+      return;
+    }
+    populate_history();
+  });
+  connect(close_button, &QPushButton::clicked, &dialog, &QDialog::reject);
+
+  populate_history();
+  dialog.exec();
+}
+
+void View::LoadHistoryRecordToView(const s21::HistoryRecord &record) {
+  string_to_calculate_ = record.expression;
+  string_to_show_ = record.display_expression.trimmed().isEmpty()
+                        ? record.expression
+                        : record.display_expression;
+  ui_->x_value_input->setText(record.x_value);
+  ui_->display->setText(string_to_show_.isEmpty() ? "0" : string_to_show_);
+  RebuildInputState();
+  statusBar()->showMessage(QString("Loaded history result: %1").arg(record.result),
+                           3000);
+}
+
+void View::RebuildInputState() {
+  num_clicked_ = false;
+  point_clicked_ = false;
+  operator_clicked_ = false;
+  x_clicked_ = false;
+  e_clicked_ = false;
+  flag_first_zero_ = false;
+  open_parenthesis_clicked_ = 0;
+
+  for (const QChar symbol : string_to_calculate_) {
+    if (symbol == '(') {
+      open_parenthesis_clicked_++;
+    } else if (symbol == ')') {
+      open_parenthesis_clicked_ = std::max(0, open_parenthesis_clicked_ - 1);
+    }
+  }
+
+  if (string_to_calculate_.isEmpty()) {
+    return;
+  }
+
+  const QChar last_symbol = string_to_calculate_.back();
+  num_clicked_ = last_symbol.isDigit() || last_symbol == '.';
+  operator_clicked_ = last_symbol == '+' || last_symbol == '-' ||
+                      last_symbol == '*' || last_symbol == '/' ||
+                      last_symbol == '%' || last_symbol == '^';
+  x_clicked_ = last_symbol == 'x';
+
+  int token_start = string_to_calculate_.length() - 1;
+  while (token_start >= 0) {
+    const QChar symbol = string_to_calculate_.at(token_start);
+    const bool is_scientific_sign =
+        (symbol == '+' || symbol == '-') && token_start > 0 &&
+        string_to_calculate_.at(token_start - 1) == 'e';
+    if (!is_scientific_sign &&
+        (symbol == '+' || symbol == '-' || symbol == '*' || symbol == '/' ||
+         symbol == '%' || symbol == '^' || symbol == '(' || symbol == ')')) {
+      break;
+    }
+    if (symbol == '.') {
+      point_clicked_ = true;
+    }
+    if (symbol == 'e') {
+      e_clicked_ = true;
+    }
+    --token_start;
+  }
+
+  const QString current_token = string_to_calculate_.mid(token_start + 1);
+  flag_first_zero_ = current_token != "0";
 }
 
 QString View::TruncateZeros(long double &value) {

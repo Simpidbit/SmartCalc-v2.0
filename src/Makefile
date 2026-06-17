@@ -1,5 +1,8 @@
 CC=g++
 CFLAGS=-Wall -Werror -Wextra -std=c++17
+QT_PKGCONFIG=$(shell pkg-config --exists Qt6Core Qt6Gui Qt6Widgets && echo "Qt6Core Qt6Gui Qt6Widgets" || echo "Qt5Core Qt5Gui Qt5Widgets")
+QT_CFLAGS=$(shell pkg-config --cflags $(QT_PKGCONFIG))
+QT_LIBS=$(shell pkg-config --libs $(QT_PKGCONFIG))
 
 all: clean check_style test gcov_report install uninstall dvi dist
 
@@ -19,7 +22,7 @@ uninstall: clean
 	@echo "\033[46mApplication removed\033[0m"
 
 test: clean
-	$(CC) $(CFLAGS) --coverage model/tests/*.cc model/*.cc -lgtest -lgtest_main -pthread -o test
+	$(CC) $(CFLAGS) $(QT_CFLAGS) --coverage model/tests/*.cc model/*.cc history/*.cc view/keyboard_adapter.cc $(QT_LIBS) -lgtest -lgtest_main -pthread -o test
 	./test
 
 gcov_report: test
@@ -45,6 +48,8 @@ check_style:
 	clang-format -style=Google -n view/*.cc view/*.h
 	clang-format -style=Google -n controller/*.h
 	clang-format -style=Google -n model/*.cc model/*.h
+	clang-format -style=Google -n history/*.cc history/*.h
+	clang-format -style=Google -n export/*.cc export/*.h
 	clang-format -style=Google -n model/tests/*.cc
 	clang-format -style=Google -n main.cc
 
@@ -52,5 +57,7 @@ fix_style:
 	clang-format -style=Google -i view/*.cc view/*.h
 	clang-format -style=Google -i controller/*.h
 	clang-format -style=Google -i model/*.cc model/*.h
+	clang-format -style=Google -i history/*.cc history/*.h
+	clang-format -style=Google -i export/*.cc export/*.h
 	clang-format -style=Google -i model/tests/*.cc
 	clang-format -style=Google -i main.cc
