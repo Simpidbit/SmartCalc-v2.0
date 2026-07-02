@@ -1,6 +1,11 @@
 #ifndef CPP3_SMARTCALC_V2_0_SRC_MODEL_REVERSE_POLISH_NOTATION_H_
 #define CPP3_SMARTCALC_V2_0_SRC_MODEL_REVERSE_POLISH_NOTATION_H_
 
+/**
+ * @file reverse_polish_notation.h
+ * @brief Declares conversion from infix expressions to Reverse Polish Notation.
+ */
+
 #include <list>
 #include <stack>
 #include <string>
@@ -10,78 +15,81 @@
 namespace s21 {
 
 /**
- * @brief 将中缀表达式转换为逆波兰表达式（RPN）的类。
- * @details 该类接收字符串形式的表达式，将其拆分为词法单元并转换为 RPN，
- * 结果存储在 `std::list` 容器中。
- * 转换过程采用 Dijkstra 的 Shunting-yard（调度场）算法，
- * 基于栈管理尚未输出的运算符，并按顺序扫描输入 token 逐步生成输出序列。
+ * @brief Class for converting infix expressions to Reverse Polish Notation
+ * (RPN).
+ * @details This class accepts a string expression, splits it into lexemes,
+ * and converts it to RPN stored in a `std::list`. The conversion follows
+ * Dijkstra's Shunting-yard algorithm, using a stack to manage operators that
+ * have not yet been emitted while scanning tokens in order.
  */
 class ReversePolishNotation {
  public:
   /**
-   * @brief 默认构造函数。
+   * @brief Default constructor.
    */
   ReversePolishNotation() = default;
   /**
-   * @brief 默认析构函数。
+   * @brief Default destructor.
    */
   ~ReversePolishNotation() = default;
 
   /**
-   * @brief 获取逆波兰表达式词法单元序列。
-   * @return `std::list<Lexeme>` 类型的 RPN 词法单元列表。
+   * @brief Returns the current Reverse Polish lexeme sequence.
+   * @return RPN lexeme list as `std::list<Lexeme>`.
    */
   std::list<Lexeme> GetRpnList() { return rpn_list_; };
 
   /**
-   * @brief 将输入字符串表达式转换为 RPN 序列。
-   * @param str 待转换的中缀表达式字符串。
+   * @brief Converts an input expression string to an RPN sequence.
+   * @param str Infix expression string to convert.
    */
   void Convert(std::string &str);
 
  private:
-  std::list<Lexeme> rpn_list_;  ///< 转换后的逆波兰词法单元列表
+  std::list<Lexeme> rpn_list_;  ///< Lexeme list after conversion to RPN
 
   /**
-   * @brief 解析数字词法单元并追加到 RPN 列表。
-   * @param it 指向数字起始位置的字符串迭代器。
-   * @return 解析完成后，外层迭代器应前进的字符数。
+   * @brief Parses a numeric lexeme and appends it to the RPN list.
+   * @param it Iterator pointing to the beginning of the number.
+   * @return Number of characters by which the outer iterator should advance.
    */
   size_t ParseNumber(std::string::iterator it);
 
   /**
-   * @brief 解析当前运算符并根据优先级规则处理运算符栈。
-   * @param operators_stack 运算符栈。
-   * @param it 指向当前字符的迭代器。
-   * @param str 输入表达式字符串。
+   * @brief Parses the current operator and updates the operator stack based on
+   * precedence rules.
+   * @param operators_stack Operator stack.
+   * @param it Iterator pointing to the current character.
+   * @param str Input expression string.
    */
   void ParseOperator(std::stack<Lexeme> &operators_stack,
                      std::string::iterator it, std::string &str);
 
   /**
-   * @brief 处理右括号：持续弹栈并输出，直到遇到左括号。
-   * @param operators_stack 运算符栈。
+   * @brief Handles a closing parenthesis by popping operators until an opening
+   * parenthesis is reached.
+   * @param operators_stack Operator stack.
    */
   void CloseParenth(std::stack<Lexeme> &operators_stack);
 
   /**
-   * @brief 将左括号压入运算符栈。
-   * @param operators_stack 运算符栈。
+   * @brief Pushes an opening parenthesis onto the operator stack.
+   * @param operators_stack Operator stack.
    */
   void PushOpenParenth(std::stack<Lexeme> &operators_stack);
 
   /**
-   * @brief 获取当前符号对应的优先级。
-   * @param it 指向当前符号的迭代器。
-   * @return 当前符号对应的 Priority。
+   * @brief Returns the precedence of the current symbol.
+   * @param it Iterator pointing to the current symbol.
+   * @return Corresponding `Priority` value for the symbol.
    */
   Priority GetPriority(std::string::iterator it);
 
   /**
-   * @brief 判断 `+` 或 `-` 是否为一元符号。
-   * @param it 指向当前符号的迭代器。
-   * @param str 输入表达式字符串。
-   * @return 若为一元符号返回 `true`，否则返回 `false`。
+   * @brief Determines whether `+` or `-` is being used as a unary sign.
+   * @param it Iterator pointing to the current symbol.
+   * @param str Input expression string.
+   * @return `true` if the symbol is unary, otherwise `false`.
    */
   bool IsUnary(std::string::iterator it, std::string &str);
 

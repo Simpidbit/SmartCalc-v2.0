@@ -11,7 +11,9 @@ namespace s21 {
  * @brief Converts the UI expression into a compact internal representation.
  * @details Replaces multi-character function names with single-character
  * markers expected by the parser while preserving numbers, operators, and the
- * variable `x`.
+ * variable `x`. In particular, `ln` becomes `l`, `log` becomes `L`,
+ * `sin/cos/tan` remain lowercase single-letter markers, and
+ * `asin/acos/atan` are converted to uppercase `S/C/T`.
  */
 void FormatString::Convert() {
   QString::iterator it = q_str_.begin();

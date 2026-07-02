@@ -1,13 +1,19 @@
+/**
+ * @file reverse_polish_notation.cc
+ * @brief Implements conversion from infix expressions to Reverse Polish Notation.
+ */
+
 #include "reverse_polish_notation.h"
 
 using namespace s21;
 
 /**
- * @brief 将中缀表达式转换为逆波兰表达式（RPN）。
- * @details 使用 Shunting-yard 算法：顺序扫描输入字符串，
- * 数字直接输出到 RPN 列表，运算符依据优先级在运算符栈中进出，
- * 括号触发局部出栈，扫描结束后将栈中剩余运算符全部输出。
- * @param str 待转换的中缀表达式。
+ * @brief Converts an infix expression to Reverse Polish Notation (RPN).
+ * @details The function applies the Shunting-yard algorithm: it scans the
+ * input string from left to right, writes numbers directly to the RPN list,
+ * manages operators in a precedence-aware stack, and flushes any remaining
+ * operators after the scan completes.
+ * @param str Infix expression to convert.
  */
 void ReversePolishNotation::Convert(std::string &str) {
   std::stack<Lexeme> operators;
@@ -36,11 +42,12 @@ void ReversePolishNotation::Convert(std::string &str) {
 }
 
 /**
- * @brief 解析数字（含小数、科学计数法、变量 x）并写入 RPN 列表。
- * @details 连续读取数字相关字符，支持 `e` 指数表示中紧随其后的符号位，
- * 例如 `1.2e-3`。解析完成后返回外层迭代器应前进的位移。
- * @param it 指向当前数字起始位置的迭代器。
- * @return size_t 外层迭代器位移长度。
+ * @brief Parses a number and writes it to the RPN list.
+ * @details The parser reads decimal numbers, scientific notation, and the
+ * variable `x`. It also accepts the sign immediately following `e`, such as
+ * in `1.2e-3`. The returned value tells the outer loop how far to advance.
+ * @param it Iterator pointing to the first character of the number.
+ * @return Number of characters consumed from the input.
  */
 size_t ReversePolishNotation::ParseNumber(std::string::iterator it) {
   Lexeme new_lexeme;
@@ -60,13 +67,14 @@ size_t ReversePolishNotation::ParseNumber(std::string::iterator it) {
 }
 
 /**
- * @brief 解析并处理一个运算符。
- * @details 当 `+/-` 被识别为一元符号时，先向 RPN 输出一个 `0`，
- * 将其转化为二元运算语义；随后依据优先级规则处理运算符栈：
- * 当前运算符优先级低于或等于栈顶时持续出栈（直到左括号或栈空）。
- * @param operators_stack 运算符栈。
- * @param it 指向当前运算符的迭代器。
- * @param str 原始输入表达式。
+ * @brief Parses and processes a single operator.
+ * @details When `+` or `-` is recognized as unary, the function first outputs
+ * a `0` to transform it into equivalent binary semantics. It then processes
+ * the operator stack according to precedence rules, popping operators while
+ * the current one has lower or equal precedence than the stack top.
+ * @param operators_stack Operator stack.
+ * @param it Iterator pointing to the current operator.
+ * @param str Original input expression.
  */
 void ReversePolishNotation::ParseOperator(std::stack<Lexeme> &operators_stack,
                                           std::string::iterator it,
@@ -102,10 +110,11 @@ void ReversePolishNotation::ParseOperator(std::stack<Lexeme> &operators_stack,
 }
 
 /**
- * @brief 处理右括号。
- * @details 持续弹出运算符并输出到 RPN 列表，直到遇到左括号；
- * 左括号仅用于分组控制，不写入输出列表。
- * @param operators_stack 运算符栈。
+ * @brief Handles a closing parenthesis.
+ * @details Operators are popped and appended to the RPN list until an opening
+ * parenthesis is found. The opening parenthesis itself is used only for
+ * grouping and is not written to the output list.
+ * @param operators_stack Operator stack.
  */
 void ReversePolishNotation::CloseParenth(std::stack<Lexeme> &operators_stack) {
   Lexeme element;
@@ -121,8 +130,8 @@ void ReversePolishNotation::CloseParenth(std::stack<Lexeme> &operators_stack) {
 }
 
 /**
- * @brief 将左括号压入运算符栈。
- * @param operators_stack 运算符栈。
+ * @brief Pushes an opening parenthesis onto the operator stack.
+ * @param operators_stack Operator stack.
  */
 void ReversePolishNotation::PushOpenParenth(
     std::stack<Lexeme> &operators_stack) {
@@ -131,11 +140,11 @@ void ReversePolishNotation::PushOpenParenth(
 }
 
 /**
- * @brief 获取当前符号的优先级。
- * @details `+/-` 为一级，`*//%` 为二级，`^/r` 为三级，
- * 其余函数类符号为四级。
- * @param it 指向当前符号的迭代器。
- * @return Priority 当前符号对应优先级。
+ * @brief Returns the precedence level of the current symbol.
+ * @details `+` and `-` are level 1, `*`, `/`, and `%` are level 2, `^` and
+ * `r` are level 3, and the remaining function-like symbols are level 4.
+ * @param it Iterator pointing to the current symbol.
+ * @return `Priority` corresponding to the current symbol.
  */
 Priority ReversePolishNotation::GetPriority(std::string::iterator it) {
   Priority element_priority;
@@ -154,12 +163,12 @@ Priority ReversePolishNotation::GetPriority(std::string::iterator it) {
 }
 
 /**
- * @brief 判断当前 `+` 或 `-` 是否为一元符号。
- * @details 在表达式起始位置，或紧跟左括号 `(` 时，
- * 视为一元正负号。
- * @param it 指向当前符号的迭代器。
- * @param str 原始输入表达式。
- * @return bool 是一元符号返回 `true`，否则返回 `false`。
+ * @brief Determines whether the current `+` or `-` is unary.
+ * @details A plus or minus sign is treated as unary when it appears at the
+ * beginning of the expression or immediately after an opening parenthesis.
+ * @param it Iterator pointing to the current symbol.
+ * @param str Original input expression.
+ * @return `true` if the symbol is unary, otherwise `false`.
  */
 bool ReversePolishNotation::IsUnary(std::string::iterator it,
                                     std::string &str) {

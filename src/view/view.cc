@@ -99,6 +99,10 @@ void View::ClearButtonClicked() {
 
 /**
  * @brief Appends a digit to the current expression when input rules allow it.
+ * @details The handler keeps the internal parser string and the user-facing
+ * display string in sync, suppresses repeated leading zeroes inside a numeric
+ * lexeme, and updates state flags that control whether digits, operators, or a
+ * decimal point may follow.
  */
 void View::NumberClicked() {
   QPushButton *button = qobject_cast<QPushButton *>(sender());
@@ -400,6 +404,10 @@ void View::ChopString(size_t number_to_chop) {
 
 /**
  * @brief Removes the last entered token and restores the related state flags.
+ * @details Depending on what was entered last, the function may remove one
+ * character, an entire multi-character function call prefix, or a paired token
+ * such as `^(`. After deletion it recalculates the input-state flags from the
+ * new tail of the expression so validation rules remain consistent.
  */
 void View::BackspaceClicked() {
   if (string_to_calculate_.length() != 0) {
@@ -520,6 +528,10 @@ bool View::GetOperatorStatus(QString::ConstIterator str) {
 
 /**
  * @brief Determines whether leading zero protection should remain enabled.
+ * @details Returns `false` when the current numeric lexeme still starts with a
+ * protected zero, for example a standalone `0` or `0.` immediately following
+ * the expression start or a binary operator. In all other cases, additional
+ * digits may be appended normally.
  * @param str Iterator positioned at the last character of the expression.
  * @return `true` if entering another leading zero is allowed, otherwise
  * `false`.
@@ -605,6 +617,10 @@ void View::EqualButtonClicked() {
 
 /**
  * @brief Formats a calculation result and updates the display state.
+ * @details The function clears previous input state, converts valid finite
+ * results either to integer, trimmed floating-point, or scientific notation,
+ * and preserves the formatted result as the next editable expression. Invalid
+ * numeric results are shown as `calculation error`.
  * @param result Result value returned by the controller.
  */
 void View::SetResult(long double &result) {
@@ -668,6 +684,11 @@ QString View::TruncateZeros(long double &value) {
 
 /**
  * @brief Opens the graph window and plots the current expression when valid.
+ * @details If no graph dialog exists, the function creates one next to the
+ * main window and wires its close signal back to the view. It then validates
+ * the current expression: valid input is converted and plotted, invalid
+ * non-empty input clears the plot and shows `invalid input`, and empty input
+ * simply clears the graph.
  */
 void View::OpenGraphWindow() {
   /* if the window isn't open */

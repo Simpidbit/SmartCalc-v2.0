@@ -1,6 +1,11 @@
 #ifndef CPP3_SMARTCALC_V2_0_SRC_VIEW_VIEW_H_
 #define CPP3_SMARTCALC_V2_0_SRC_VIEW_VIEW_H_
 
+/**
+ * @file view.h
+ * @brief Declares the main SmartCalc window and its input handlers.
+ */
+
 #include <QMainWindow>
 #include <QStack>
 
@@ -42,6 +47,9 @@ class View : public QMainWindow {
   /**
    * @brief Handles clicked number-buttons, including zero as a first digit in a
    * number-lexeme to avoid multiple print.
+   * @details The slot prevents invalid number forms such as repeated leading
+   * zeroes, keeps both internal and display strings synchronized, and updates
+   * state flags that describe whether the current token is numeric.
    */
   void NumberClicked();
 
@@ -108,6 +116,9 @@ class View : public QMainWindow {
 
   /**
    * @brief Handles 'backspace' button clicked.
+   * @details Removes the last logical token rather than always deleting a
+   * single visible character, then reconstructs state flags so subsequent
+   * input validation still works correctly.
    */
   void BackspaceClicked();
 
@@ -118,6 +129,9 @@ class View : public QMainWindow {
 
   /**
    * @brief Handles Graphing button clicked.
+   * @details Opens or focuses the graph dialog and, when the current
+   * expression is syntactically complete, requests fresh coordinates from the
+   * controller and sends them to the plotting widget.
    */
   void OpenGraphWindow();
 
@@ -151,6 +165,8 @@ class View : public QMainWindow {
 
   /**
    * @brief Retrieves first zero in a lexeme status.
+   * @details Used after deletions to decide whether the current numeric lexeme
+   * still begins with a protected leading zero such as `0` or `0.`.
    * @param str iterator to the current symbol in string_to_calculate_.
    * @return true - enable multiple zero input, false - disable
    */

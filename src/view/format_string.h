@@ -1,6 +1,11 @@
 #ifndef CPP3_SMARTCALC_V2_0_SRC_VIEW_FORMAT_STRING_H_
 #define CPP3_SMARTCALC_V2_0_SRC_VIEW_FORMAT_STRING_H_
 
+/**
+ * @file format_string.h
+ * @brief Declares conversion from UI text into parser-ready expression strings.
+ */
+
 #include <QString>
 #include <locale>
 #include <string>

@@ -1,6 +1,11 @@
 #ifndef CPP3_SMARTCALC_V2_0_SRC_MODEL_PLOT_GRAPH_H_
 #define CPP3_SMARTCALC_V2_0_SRC_MODEL_PLOT_GRAPH_H_
 
+/**
+ * @file plot_graph.h
+ * @brief Declares helpers for generating plot coordinates from an expression.
+ */
+
 #include <string>
 #include <vector>
 
@@ -9,29 +14,36 @@
 namespace s21 {
 
 /**
- * @brief 计算绘图坐标数据的类。
- * @details 该类接收数学表达式及 x 轴取值范围，
- * 按固定步长对 x 进行采样，并调用计算模块得到对应 y 值，
- * 最终返回可直接用于绘图的坐标向量。
+ * @brief Class for generating coordinate data used for plotting.
+ * @details This class accepts a mathematical expression and an x-axis range,
+ * samples x values at a fixed step, evaluates the expression for each sample,
+ * and returns coordinate vectors that can be passed directly to the plotting
+ * widget.
  */
 class PlotGraph {
  public:
   /**
-   * @brief 默认构造函数。
+   * @brief Default constructor.
    */
   PlotGraph() = default;
 
   /**
-   * @brief 默认析构函数。
+   * @brief Default destructor.
    */
   ~PlotGraph() = default;
 
   /**
-   * @brief 在指定 x 范围内计算表达式对应的 x、y 坐标序列。
-   * @param expression 数学表达式字符串。
-   * @param x_range x 轴范围，`first` 为最小值，`second` 为最大值。
-   * @return `std::pair<std::vector<double>, std::vector<double>>`，
-   * 其中第一个向量为 x 坐标，第二个向量为对应 y 坐标。
+   * @brief Computes x and y coordinate sequences for an expression over a
+   * specified x-range.
+   * @details The function samples from `x_range.first` up to
+   * `x_range.second` using a fixed step of `0.1`, reevaluates the expression
+   * for each sample via Calculation, and stores matching x and y values at the
+   * same indices in the returned vectors.
+   * @param expression Mathematical expression string.
+   * @param x_range X-axis range, where `first` is the minimum value and
+   * `second` is the maximum value.
+   * @return Pair of vectors where the first stores x-coordinates and the
+   * second stores the corresponding y-coordinates.
    */
   std::pair<std::vector<double>, std::vector<double>> Calculate(
       std::string &expression, std::pair<double, double> x_range) {
@@ -58,12 +70,12 @@ class PlotGraph {
   }
 
  private:
-  long double x_min_;  ///< x 轴最小值
-  long double x_max_;  ///< x 轴最大值
+  long double x_min_;  ///< Minimum x-axis value
+  long double x_max_;  ///< Maximum x-axis value
   std::pair<std::vector<double>, std::vector<double>>
-      coordinates_;  ///< 绘图坐标数据（当前版本中未直接使用）
+      coordinates_;  ///< Plot coordinate data (not used directly in the current version)
   Calculation
-      calc_expression_;  ///< 计算器实例，用于按采样点求表达式值
+      calc_expression_;  ///< Calculator instance used to evaluate expression samples
 
 };  // class PlotGraph
 

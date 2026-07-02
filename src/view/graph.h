@@ -1,6 +1,11 @@
 #ifndef CPP3_SMARTCALC_V2_0_SRC_VIEW_GRAPH_H_
 #define CPP3_SMARTCALC_V2_0_SRC_VIEW_GRAPH_H_
 
+/**
+ * @file graph.h
+ * @brief Declares the dialog responsible for plotting graph data.
+ */
+
 #include <qcustomplot.h>
 
 #include <QDialog>

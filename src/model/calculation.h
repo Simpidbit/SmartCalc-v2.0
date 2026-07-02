@@ -1,6 +1,11 @@
 #ifndef CPP3_SMARTCALC_V2_0_SRC_MODEL_CALCULATION_H_
 #define CPP3_SMARTCALC_V2_0_SRC_MODEL_CALCULATION_H_
 
+/**
+ * @file calculation.h
+ * @brief Declares the expression evaluation engine for SmartCalc.
+ */
+
 #include <list>
 #include <stack>
 #include <stdexcept>
@@ -13,49 +18,52 @@
 namespace s21 {
 
 /**
- * @brief 基于数学表达式执行算术与三角函数计算的类。
- * @details 该类负责解析输入表达式，将其中缀形式转换为逆波兰表达式（RPN），
- * 并按逆波兰序列完成求值。支持在表达式中使用变量 `x`，
- * 计算完成后可通过 GetResult 获取结果。
+ * @brief Class for evaluating arithmetic and trigonometric expressions.
+ * @details This class parses an input expression, converts it from infix form
+ * to Reverse Polish Notation (RPN), and evaluates the resulting sequence. It
+ * supports the variable `x`, and the final result can be retrieved with
+ * GetResult.
  */
 class Calculation {
  public:
   /**
-   * @brief 默认构造函数。
+   * @brief Default constructor.
    */
   Calculation() = default;
 
   /**
-   * @brief 默认析构函数。
+   * @brief Default destructor.
    */
   ~Calculation() = default;
 
   /**
-   * @brief 获取最近一次计算结果。
-   * @return long double 类型的计算结果。
+   * @brief Returns the most recent calculation result.
+   * @return Calculation result as a `long double`.
    */
   long double GetResult();
 
   /**
-   * @brief 解析并计算输入表达式。
-   * @details 函数会遍历逆波兰表达式序列：遇到数字（或变量 x）则入栈，
-   * 遇到运算符则从栈中取操作数执行运算，并将结果重新压栈。
-   * 序列处理结束后，栈顶值即为最终结果，保存到 `calculation_result_`。
-   * @param expression 待计算的输入表达式。
-   * @param x_value 变量 x 的替换值。
+   * @brief Parses and evaluates an input expression.
+   * @details The function iterates through the RPN sequence: numbers and the
+   * variable `x` are pushed onto the stack, operators consume operands from
+   * the stack, and each computed result is pushed back. When processing ends,
+   * the value at the top of the stack is stored in `calculation_result_`.
+   * @param expression Input expression to evaluate.
+   * @param x_value Value used to substitute the variable `x`.
    */
   void Parse(std::string &expression, long double x_value);
 
  private:
-  ReversePolishNotation rpn_;  ///< 负责将输入表达式转换为逆波兰表达式的对象
-  std::list<Lexeme> expression_;    ///< 待计算的逆波兰表达式序列
-  long double calculation_result_;  ///< 计算结果
+  ReversePolishNotation rpn_;  ///< Converts input expressions to Reverse Polish Notation
+  std::list<Lexeme> expression_;    ///< Reverse Polish sequence currently being evaluated
+  long double calculation_result_;  ///< Stored calculation result
 
   /**
-   * @brief 根据当前运算符与操作数执行具体计算。
-   * @param current_operator 当前运算符对应的词法单元引用。
-   * @param numbers 存放操作数的栈。
-   * @return long double 类型的运算结果。
+   * @brief Executes one calculation step for the current operator.
+   * @param current_operator Reference to the lexeme representing the current
+   * operator.
+   * @param numbers Stack containing operands.
+   * @return Result of the operation as a `long double`.
    */
   long double Calculate(s21::Lexeme &current_operator,
                         std::stack<long double> &numbers);
