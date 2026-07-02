@@ -20,6 +20,8 @@ using namespace s21;
 void Calculation::Parse(std::string &expression, long double x_value) {
   rpn_.Convert(expression);
 
+  // Consume the already converted RPN sequence from left to right, using a
+  // numeric stack in the classic stack-machine style.
   expression_ = rpn_.GetRpnList();
   long double operation_result = 0;
   std::stack<long double> numbers;
@@ -29,9 +31,13 @@ void Calculation::Parse(std::string &expression, long double x_value) {
     lexeme = expression_.front();
     expression_.pop_front();
     if (lexeme.type == LexemeType::kNumber) {
+      // The parser keeps `x` as a symbolic operand until evaluation time, so
+      // substitute the runtime x-value only here.
       if (lexeme.value == "x") {
         numbers.push(x_value);
       } else {
+        // Convert numeric lexemes lazily while evaluating. Overflow is treated
+        // as an invalid calculation result.
         try {
           number = std::stold(lexeme.value);
         } catch (const std::out_of_range &e) {
@@ -42,10 +48,15 @@ void Calculation::Parse(std::string &expression, long double x_value) {
       }
     }
     if (lexeme.type == LexemeType::kOperator) {
+      // Each operator consumes the operands it needs and pushes its result
+      // back, so the stack always represents the partial evaluation state.
       operation_result = Calculate(lexeme, numbers);
       numbers.push(operation_result);
     }
   }
+
+  // After a valid RPN evaluation, the final answer remains at the top of the
+  // stack as the only unresolved value.
   calculation_result_ = numbers.top();
   numbers.pop();
 }
@@ -66,7 +77,9 @@ long double Calculation::Calculate(s21::Lexeme &current_operator,
   long double b = 0;
   numbers.pop();
 
-  /* operations that require two operands */
+  // Binary operators consume the right operand first (`a`) and the left
+  // operand second (`b`) so non-commutative operations preserve expression
+  // order.
   if (current_operator.priority == Priority::kPriority_1 ||
       current_operator.priority == Priority::kPriority_2) {
     b = numbers.top();
@@ -80,6 +93,7 @@ long double Calculation::Calculate(s21::Lexeme &current_operator,
     } else if (current_operator.value == "/") {
       result = b / a;
     } else if (current_operator.value == "%") { /* mod */
+      // Modulo is implemented with integer semantics in this project.
       if (a == 0.0) {
         result = NAN;
       } else {
@@ -87,7 +101,8 @@ long double Calculation::Calculate(s21::Lexeme &current_operator,
       }
     }
 
-    /* operations that require one operand (except pow) */
+    // Unary functions use only `a`. Power is handled here as a special case
+    // because it has higher precedence but still consumes two operands.
   } else {
     if (current_operator.value == "r") { /* sqrt */
       result = sqrt(a);

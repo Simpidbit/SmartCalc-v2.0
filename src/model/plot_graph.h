@@ -50,6 +50,8 @@ class PlotGraph {
     std::vector<double> x_vector;
     std::vector<double> y_vector;
 
+    // Store the requested bounds so the sampling loop can iterate over a
+    // stable copy of the current plotting interval.
     x_min_ = x_range.first;
     x_max_ = x_range.second;
 
@@ -57,6 +59,8 @@ class PlotGraph {
     double x_coordinate = 0;
     double step = 0.1;
 
+    // Sample the function at a fixed step and keep x/y values aligned by index
+    // so the plotting widget can consume both vectors directly.
     for (double i = x_min_; i < x_max_; i += step) {
       calc_expression_.Parse(expression, i);
       y_coordinate = static_cast<double>(calc_expression_.GetResult());

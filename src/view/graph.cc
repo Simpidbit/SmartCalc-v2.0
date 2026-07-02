@@ -30,25 +30,33 @@ Graph::~Graph() { delete ui_; }
  */
 void Graph::BuildPlot(
     std::pair<std::vector<double>, std::vector<double>> &coordinates) {
+  // Remove any previous curve so the widget always shows only the latest
+  // expression.
   ui_->plot->clearGraphs();
 
+  // Read the currently selected visible ranges from the dialog controls.
   double x_begin = ui_->spin_box_min_x->value();
   double x_end = ui_->spin_box_max_x->value();
   double y_begin = ui_->spin_box_min_y->value();
   double y_end = ui_->spin_box_max_y->value();
 
+  // QCustomPlot consumes QVector data, so convert the sampled STL vectors
+  // before attaching them to the graph.
   QVector<double> x_vector(coordinates.first.begin(), coordinates.first.end());
   QVector<double> y_vector(coordinates.second.begin(),
                            coordinates.second.end());
 
+  // Apply the user-selected viewport before drawing the new data.
   ui_->plot->xAxis->setRange(x_begin, x_end);
   ui_->plot->yAxis->setRange(y_begin, y_end);
 
+  // Create the plot curve, bind the new coordinates, and repaint the widget.
   ui_->plot->addGraph();
   ui_->plot->graph(0)->setData(x_vector, y_vector);
   ui_->plot->replot();
   ui_->plot->update();
 
+  // Keep interactive navigation enabled after each redraw.
   ui_->plot->setInteraction(QCP::iRangeZoom, true);
   ui_->plot->setInteraction(QCP::iRangeDrag, true);
 }
@@ -65,6 +73,7 @@ void Graph::SetExpression(QString expression) {
  * @brief Clears the expression label and removes plotted data.
  */
 void Graph::Clear() {
+  // Reset both the textual expression label and the visual plot contents.
   ui_->expression_to_plot->clear();
   ui_->plot->clearGraphs();
   ui_->plot->replot();
@@ -77,6 +86,7 @@ void Graph::Clear() {
  */
 std::pair<double, double> Graph::GetXRange() {
   std::pair<double, double> x_range;
+  // Return the currently configured horizontal interval for function sampling.
   x_range.first = ui_->spin_box_min_x->value();
   x_range.second = ui_->spin_box_max_x->value();
   return x_range;

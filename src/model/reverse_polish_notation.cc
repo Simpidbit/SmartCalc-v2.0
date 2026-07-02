@@ -24,6 +24,8 @@ void ReversePolishNotation::Convert(std::string &str) {
   std::string::iterator symbol = str.begin();
   while (symbol != str.end()) {
     move_iter = 1;
+    // Dispatch each symbol to the parser branch that knows how many
+    // characters belong to the current lexeme.
     if (std::isdigit(*symbol) || *symbol == 'x') {
       move_iter = ParseNumber(symbol);
     } else if (*symbol == '(') {
@@ -35,6 +37,9 @@ void ReversePolishNotation::Convert(std::string &str) {
     }
     symbol += move_iter;
   }
+
+  // Once the input ends, every remaining operator can be emitted in stack
+  // order because no later token can affect precedence anymore.
   while (!operators.empty()) {
     rpn_list_.push_back(operators.top());
     operators.pop();
@@ -52,7 +57,9 @@ void ReversePolishNotation::Convert(std::string &str) {
 size_t ReversePolishNotation::ParseNumber(std::string::iterator it) {
   Lexeme new_lexeme;
 
-  /* check if a lexeme is a number or exponential notation or x */
+  // Extend the lexeme while characters still belong to the same numeric token,
+  // including scientific notation such as `1e-7`, or the standalone variable
+  // `x`.
   while (std::isdigit(*it) || *it == '.' || *it == 'e' ||
          (*it == '-' && *(it - 1) == 'e') || (*it == '+' && *(it - 1) == 'e') ||
          *it == 'x') {
@@ -81,7 +88,8 @@ void ReversePolishNotation::ParseOperator(std::stack<Lexeme> &operators_stack,
                                           std::string &str) {
   Lexeme new_element(*it, GetPriority(it), LexemeType::kOperator);
 
-  /* if `+` or `-` is an unary sign, push 0 to RPN list */
+  // Represent unary `+` and `-` as binary operations against zero so the
+  // evaluator can use one consistent operator model.
   if (IsUnary(it, str)) {
     Lexeme add_zero('0', Priority::kPriority_0, LexemeType::kNumber);
     rpn_list_.push_back(add_zero);
@@ -90,13 +98,14 @@ void ReversePolishNotation::ParseOperator(std::stack<Lexeme> &operators_stack,
   if (operators_stack.empty()) {
     operators_stack.push(new_element);
 
-    /* if stack is not empty */
+    // Otherwise compare precedence against the stack top and emit any operators
+    // that must be evaluated before the current one.
   } else {
     if (new_element.priority > operators_stack.top().priority) {
       operators_stack.push(new_element);
     } else {
-      /* if current element priority is less or equal then top element priority,
-       * pop and add top lexeme to the RPN list until '(' is met */
+      // Stop at `(` because it is only a grouping marker and must never appear
+      // in the final RPN output.
       while (!operators_stack.empty() &&
              (new_element.priority <= operators_stack.top().priority) &&
              operators_stack.top().value != "(") {
@@ -121,6 +130,7 @@ void ReversePolishNotation::CloseParenth(std::stack<Lexeme> &operators_stack) {
   while (!operators_stack.empty()) {
     element = operators_stack.top();
     if (element.value == "(") {
+      // Discard the matching opening parenthesis instead of emitting it.
       operators_stack.pop();
       break;
     }
@@ -155,8 +165,11 @@ Priority ReversePolishNotation::GetPriority(std::string::iterator it) {
   } else if (*it == '*' || *it == '/' || *it == '%') {
     element_priority = Priority::kPriority_2;
   } else if (*it == '^' || *it == 'r') { /* pow and sqrt */
+    // `r` is the compact internal token used for square root.
     element_priority = Priority::kPriority_3;
   } else {
+    // Trigonometric and logarithmic function markers are evaluated after their
+    // argument has been fully formed, so they receive the highest priority.
     element_priority = Priority::kPriority_4;
   }
   return element_priority;
@@ -173,12 +186,13 @@ Priority ReversePolishNotation::GetPriority(std::string::iterator it) {
 bool ReversePolishNotation::IsUnary(std::string::iterator it,
                                     std::string &str) {
   if (*it == '+' || *it == '-') {
-    /* if the operator is first in the string */
+    // A sign at the beginning of the whole expression is unary.
     if (it == str.begin()) {
       return true;
     }
 
-    /* if the operator follows '(' */
+    // A sign immediately after `(` starts a nested signed operand, so it is
+    // also unary.
     if (*(it - 1) == '(') {
       return true;
     }

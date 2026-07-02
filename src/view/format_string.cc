@@ -23,6 +23,8 @@ void FormatString::Convert() {
     iter_move = 1;
 
     if (*it == 'l') {
+      // Distinguish `ln` from `log`: both start with `l`, but the parser uses
+      // different one-letter tokens for them.
       it++;
 
       if (*it == 'n') {
@@ -34,16 +36,21 @@ void FormatString::Convert() {
       }
 
     } else if (*it == 'a') {
+      // `asin`, `acos`, and `atan` are encoded as uppercase one-letter parser
+      // tokens `S`, `C`, and `T`.
       it++;
 
       basic_str_ += static_cast<char>(it->unicode() - 32);
       iter_move = 3;
 
     } else if (*it == 's' || *it == 'c' || *it == 't') {
+      // `sin`, `cos`, and `tan` keep their lowercase initial as the compact
+      // parser token.
       basic_str_ += static_cast<char>(it->unicode());
       iter_move = 3;
 
     } else {
+      // Numbers, operators, parentheses, and `x` are copied unchanged.
       basic_str_ += static_cast<char>(it->unicode());
     }
 

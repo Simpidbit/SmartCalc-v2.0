@@ -107,12 +107,16 @@ void View::ClearButtonClicked() {
 void View::NumberClicked() {
   QPushButton *button = qobject_cast<QPushButton *>(sender());
 
+  // Suppress repeated leading zeroes such as `000` while a numeric lexeme is
+  // still in its protected "starts with zero" state.
   if (string_to_calculate_.length() != 0 && !point_clicked_ &&
       string_to_calculate_.back() == '0' && button->text() == '0' &&
       !flag_first_zero_) {
     flag_first_zero_ = false;
   }
 
+  // When the user replaces a protected leading zero with a non-zero digit,
+  // drop the old zero first so `05` becomes `5`.
   if (string_to_calculate_.length() != 0 && !point_clicked_ &&
       button->text() != '0') {
     if (string_to_calculate_.back() == '0' && !flag_first_zero_) {
@@ -125,6 +129,7 @@ void View::NumberClicked() {
 
   if ((flag_first_zero_ || (!num_clicked_ || point_clicked_)) &&
       button->text() != '0') {
+    // Non-zero digit branch.
     if (string_to_calculate_.length() == 0) {
       string_to_calculate_ += button->text();
       string_to_show_ += button->text();
@@ -146,6 +151,8 @@ void View::NumberClicked() {
 
   } else if ((flag_first_zero_ || (!num_clicked_ || point_clicked_)) &&
              button->text() == '0') {
+    // Zero digit branch. This path keeps a single leading zero valid and also
+    // allows zeroes after a decimal point.
     if (string_to_calculate_.length() == 0) {
       string_to_calculate_ += button->text();
       string_to_show_ += button->text();
@@ -226,6 +233,7 @@ void View::MulDivOperatorClicked() {
 void View::MathFunctionClicked() {
   bool flag = false;
   if (string_to_calculate_.length() != 0) {
+    // A function name is valid only where a new operand may start.
     if (!num_clicked_ && !point_clicked_ &&
         string_to_calculate_.back() != 'x' &&
         string_to_calculate_.back() != ')') {
@@ -243,6 +251,8 @@ void View::MathFunctionClicked() {
   } else if ((operator_clicked_ || string_to_calculate_.length() == 0 ||
               open_parenthesis_clicked_ > 0) &&
              !flag) {
+    // Allow starting an expression, or a parenthesized subexpression, with a
+    // function token that immediately opens its argument list.
     QPushButton *button = qobject_cast<QPushButton *>(sender());
     string_to_calculate_ += button->text() + "(";
     string_to_show_ += button->text() + "(";
@@ -267,6 +277,8 @@ void View::OpenParenthesisButtonClicked() {
   } else if (string_to_calculate_.length() != 0 &&
              (operator_clicked_ || open_parenthesis_clicked_ > 0) &&
              string_to_calculate_.back() != 'x' && !num_clicked_) {
+    // Inside a non-empty expression, `(` is allowed only when it begins a new
+    // operand after an operator or another opening parenthesis.
     QPushButton *button = qobject_cast<QPushButton *>(sender());
     string_to_calculate_ += button->text();
     string_to_show_ += button->text();
@@ -416,12 +428,16 @@ void View::BackspaceClicked() {
       return;
     }
 
+    // Cache the tail substrings used to recognize multi-character function
+    // tokens before any deletion changes the current expression.
     QString last_five_chars = string_to_calculate_.right(5);
     QString last_four_chars = string_to_calculate_.right(4);
     QString last_three_chars = string_to_calculate_.right(3);
     QString last_two_chars = string_to_calculate_.right(2);
 
     if (string_to_calculate_.back() == '.') {
+      // Removing a decimal point reopens the possibility of inserting one
+      // again inside the current numeric lexeme.
       ChopString(1);
       point_clicked_ = false;
       QString::ConstIterator str = string_to_calculate_.end() - 1;
@@ -432,6 +448,9 @@ void View::BackspaceClicked() {
                string_to_calculate_.back() == '-' ||
                string_to_calculate_.back() == '*' ||
                string_to_calculate_.back() == '/') {
+      // After deleting a binary operator, rebuild flags from the preceding
+      // operand because decimal-point and exponent status may become active
+      // again.
       ChopString(1);
       QString::ConstIterator str = string_to_calculate_.end() - 1;
       point_clicked_ = GetPointStatus(str);
@@ -439,19 +458,25 @@ void View::BackspaceClicked() {
       e_clicked_ = GetEStatus(str);
 
     } else if (string_to_calculate_.back() == ')') {
+      // Deleting `)` restores one unmatched opening parenthesis.
       ChopString(1);
       open_parenthesis_clicked_++;
 
     } else if (string_to_calculate_.back() == 'x') {
+      // The internal parser string stores `x` as one symbol, while the
+      // user-facing string may contain a longer button label.
       string_to_calculate_.chop(1);
       string_to_show_.chop(2);
 
     } else if (string_to_calculate_.back() == 'e') {
+      // Deleting the scientific-notation marker turns exponent mode off.
       ChopString(1);
       e_clicked_ = false;
 
     } else if (last_five_chars == "acos(" || last_five_chars == "asin(" ||
                last_five_chars == "atan(") {
+      // Remove the complete function prefix together with its auto-inserted
+      // opening parenthesis.
       ChopString(5);
       open_parenthesis_clicked_--;
 
@@ -473,7 +498,7 @@ void View::BackspaceClicked() {
       open_parenthesis_clicked_--;
 
     } else { /* if number */
-
+      // Default numeric branch: remove the last digit from the current lexeme.
       ChopString(1);
     }
 
@@ -481,6 +506,8 @@ void View::BackspaceClicked() {
       ClearButtonClicked();
 
     } else {
+      // Recompute the tail-state flags from the new last symbol so the next
+      // input operation uses consistent validation rules.
       ui_->display->setText(string_to_show_);
       QString::ConstIterator str = string_to_calculate_.end() - 1;
       num_clicked_ = GetNumStatus(str);
@@ -502,6 +529,8 @@ void View::BackspaceClicked() {
  * `false`.
  */
 bool View::GetPointStatus(QString::ConstIterator str) {
+  // Walk backward only within the current lexeme. Encountering an operator or
+  // parenthesis means the scan has reached the lexeme boundary.
   while (!str->isNull() && *str != '+' && *str != '-' && *str != '*' &&
          *str != '/' && *str != '(' && *str != ')') {
     if (*str == '.') {
@@ -537,11 +566,12 @@ bool View::GetOperatorStatus(QString::ConstIterator str) {
  * `false`.
  */
 bool View::GetZeroStatus(QString::ConstIterator str) {
-  /* if removed symbol isn't point */
+  // A plain trailing `0` keeps the lexeme in protected-leading-zero mode.
   if (!str->isNull() && *str == '0') {
     return false;
 
-    /* if removed symbol is point */
+    // For `0.` we must inspect the symbol before the zero to distinguish a
+    // real leading zero from a regular decimal number fragment.
   } else if (!str->isNull() && *str == '.') {
     if (*(--str) == '0') {
       if (!(str - 1)->isNull() && (*(str - 1) == '+' || *(str - 1) == '-' ||
@@ -606,6 +636,8 @@ bool View::GetEStatus(QString::ConstIterator str) {
 void View::EqualButtonClicked() {
   if (open_parenthesis_clicked_ == 0 && string_to_calculate_.length() != 0 &&
       operator_clicked_ == false) {
+    // Translate the UI-oriented expression into the compact token alphabet
+    // expected by the parser before delegating evaluation to the controller.
     s21::FormatString formatted_str(string_to_calculate_);
     long double x_value = ui_->x_value_input->text().toDouble();
     long double result =
@@ -633,22 +665,26 @@ void View::SetResult(long double &result) {
   } else {
     long double truncated_result = truncl(result);
 
-    /* if result is float */
+    // Preserve fractional precision only when the result is not effectively an
+    // integer.
     if (fabs(result - truncated_result) > 1e-7) {
       string_to_calculate_ = TruncateZeros(result);
       point_clicked_ = true;
 
-      /* if result is integer */
+      // Integer results are displayed without a fractional part.
     } else {
       string_to_calculate_ = QString::number(result, 'L', 0);
     }
 
-    /* if result is too long for display window, use scientific notation */
+    // Switch to scientific notation when the plain representation would exceed
+    // the available display width.
     if (string_to_calculate_.length() >= 21) {
       string_to_calculate_ = QString::number(result, 'e', 0);
       e_clicked_ = true;
     }
 
+    // Keep the formatted result as the next editable expression so users can
+    // continue calculations from the displayed value.
     string_to_show_ = string_to_calculate_;
     num_clicked_ = true;
 
@@ -714,6 +750,8 @@ void View::OpenGraphWindow() {
       operator_clicked_ == false) {
     graph_->SetExpression(string_to_show_);
 
+    // Reuse the same token conversion as normal evaluation so graph plotting
+    // operates on the parser-ready expression form.
     s21::FormatString formatted_str(string_to_calculate_);
     std::string str_to_plot = formatted_str.GetString();
     std::pair<std::vector<double>, std::vector<double>> coordinates =
