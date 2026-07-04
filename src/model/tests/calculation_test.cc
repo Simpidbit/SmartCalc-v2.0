@@ -331,6 +331,24 @@ TEST(calculate, sci_notation_1) {
   EXPECT_NEAR(result, 150.32, LIMIT);
 }
 
+TEST(calculate, sci_notation_fractional_mantissa_negative_exponent) {
+  s21::Calculation calc;
+  std::string str = "1.5e-2";
+  long double x = 0;
+  calc.Parse(str, x);
+  long double result = calc.GetResult();
+  EXPECT_NEAR(result, 0.015, LIMIT);
+}
+
+TEST(calculate, sci_notation_uppercase_exponent_marker) {
+  s21::Calculation calc;
+  std::string str = "1.5E-2";
+  long double x = 0;
+  calc.Parse(str, x);
+  long double result = calc.GetResult();
+  EXPECT_NEAR(result, 0.015, LIMIT);
+}
+
 TEST(calculate, sci_notation_2) {
   s21::Calculation calc;
   std::string str = "(2.5e3-1.5e2)/(5e1+2)";
@@ -347,6 +365,24 @@ TEST(calculate, sci_notation_3) {
   calc.Parse(str, x);
   long double result = calc.GetResult();
   EXPECT_TRUE(std::isnan(result));
+}
+
+TEST(calculate, euler_constant) {
+  s21::Calculation calc;
+  std::string str = "E+1";
+  long double x = 0;
+  calc.Parse(str, x);
+  long double result = calc.GetResult();
+  EXPECT_NEAR(result, 3.718281828459045, LIMIT);
+}
+
+TEST(calculate, lowercase_euler_constant) {
+  s21::Calculation calc;
+  std::string str = "e+1";
+  long double x = 0;
+  calc.Parse(str, x);
+  long double result = calc.GetResult();
+  EXPECT_NEAR(result, 3.718281828459045, LIMIT);
 }
 
 /** @brief 混合运算测试。 */

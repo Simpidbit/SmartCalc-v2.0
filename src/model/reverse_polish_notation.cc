@@ -1,8 +1,12 @@
 #include "reverse_polish_notation.h"
 
+#include <cctype>
+
 using namespace s21;
 
 void ReversePolishNotation::Convert(std::string &str) {
+  rpn_list_.clear();
+
   std::stack<Lexeme> operators;
 
   size_t move_iter = 1;  ///< 解析完一个词法单元后，字符串迭代器需要前进的步数。
@@ -10,8 +14,9 @@ void ReversePolishNotation::Convert(std::string &str) {
   std::string::iterator symbol = str.begin();
   while (symbol != str.end()) {
     move_iter = 1;
-    if (std::isdigit(*symbol) || *symbol == 'x') {
-      move_iter = ParseNumber(symbol);
+    if (std::isdigit(static_cast<unsigned char>(*symbol)) || *symbol == 'x' ||
+        *symbol == 'e' || *symbol == 'E') {
+      move_iter = ParseNumber(symbol, str.end());
     } else if (*symbol == '(') {
       PushOpenParenth(operators);
     } else if (*symbol == ')') {
@@ -27,13 +32,25 @@ void ReversePolishNotation::Convert(std::string &str) {
   }
 }
 
-size_t ReversePolishNotation::ParseNumber(std::string::iterator it) {
+size_t ReversePolishNotation::ParseNumber(std::string::iterator it,
+                                          std::string::iterator end) {
   Lexeme new_lexeme;
 
-  /// 判断当前词法单元是否为数字、科学计数法数字或变量 x
-  while (std::isdigit(*it) || *it == '.' || *it == 'e' ||
-         (*it == '-' && *(it - 1) == 'e') || (*it == '+' && *(it - 1) == 'e') ||
-         *it == 'x') {
+  if (*it == 'x' || *it == 'e' || *it == 'E') {
+    new_lexeme.value.push_back(*it);
+    new_lexeme.priority = Priority::kPriority_0;
+    new_lexeme.type = LexemeType::kNumber;
+    rpn_list_.push_back(new_lexeme);
+    return 1;
+  }
+
+  /// 判断当前词法单元是否为普通数字或科学计数法数字。
+  while (it != end &&
+         (std::isdigit(static_cast<unsigned char>(*it)) || *it == '.' ||
+          *it == 'e' || *it == 'E' ||
+          ((*it == '-' || *it == '+') && !new_lexeme.value.empty() &&
+           (new_lexeme.value.back() == 'e' ||
+            new_lexeme.value.back() == 'E')))) {
     new_lexeme.value.push_back(*it);
     ++it;
   }

@@ -32,6 +32,8 @@ set(PROJECT_SOURCES
         view/qcustomplot.cc
         view/format_string.h
         view/format_string.cc
+        view/access_control.h
+        view/access_control.cc
         view/keyboard_adapter.h
         view/keyboard_adapter.cc
         controller/controller.h

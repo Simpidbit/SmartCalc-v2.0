@@ -22,7 +22,7 @@ uninstall: clean
 	@echo "\033[46mApplication removed\033[0m"
 
 test: clean
-	$(CC) $(CFLAGS) $(QT_CFLAGS) --coverage model/tests/*.cc model/*.cc history/*.cc view/keyboard_adapter.cc $(QT_LIBS) -lgtest -lgtest_main -pthread -o test
+	$(CC) $(CFLAGS) $(QT_CFLAGS) --coverage model/tests/*.cc model/*.cc history/*.cc view/access_control.cc view/keyboard_adapter.cc $(QT_LIBS) -lgtest -lgtest_main -pthread -o test
 	./test
 
 gcov_report: test

@@ -2,6 +2,12 @@
 
 using namespace s21;
 
+namespace {
+
+constexpr long double kEulerNumber = 2.718281828459045235360287471352662L;
+
+}  // namespace
+
 void Calculation::Parse(std::string &expression, long double x_value) {
   rpn_.Convert(expression);
 
@@ -16,9 +22,19 @@ void Calculation::Parse(std::string &expression, long double x_value) {
     if (lexeme.type == LexemeType::kNumber) {
       if (lexeme.value == "x") {
         numbers.push(x_value);
+      } else if (lexeme.value == "e" || lexeme.value == "E") {
+        numbers.push(kEulerNumber);
       } else {
         try {
-          number = std::stold(lexeme.value);
+          size_t parsed_length = 0;
+          number = std::stold(lexeme.value, &parsed_length);
+          if (parsed_length != lexeme.value.length()) {
+            calculation_result_ = NAN;
+            return;
+          }
+        } catch (const std::invalid_argument &e) {
+          calculation_result_ = NAN;
+          return;
         } catch (const std::out_of_range &e) {
           calculation_result_ = NAN;
           return;

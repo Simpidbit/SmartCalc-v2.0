@@ -45,7 +45,7 @@ class ReversePolishNotation {
    * @param it 指向数字首字符的迭代器。
    * @return 解析完成后字符串迭代器需要移动的步数。
    */
-  size_t ParseNumber(std::string::iterator it);
+  size_t ParseNumber(std::string::iterator it, std::string::iterator end);
 
   /**
    * @brief 解析运算符并将其压入运算符栈。

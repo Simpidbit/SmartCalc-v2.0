@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QDialog>
 #include <QHBoxLayout>
+#include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
@@ -20,6 +21,111 @@
 
 #include "./ui_view.h"
 
+namespace {
+
+bool IsBinaryOperatorSymbol(QChar symbol) {
+  return symbol == '+' || symbol == '-' || symbol == '*' || symbol == '/' ||
+         symbol == '%' || symbol == '^';
+}
+
+bool IsScientificNotationSign(const QString &expression, int index) {
+  if (index <= 0 || index >= expression.length()) {
+    return false;
+  }
+
+  const QChar symbol = expression.at(index);
+  return (symbol == '+' || symbol == '-') && expression.at(index - 1) == 'e';
+}
+
+bool IsBinaryOperatorAt(const QString &expression, int index) {
+  if (index < 0 || index >= expression.length()) {
+    return false;
+  }
+  return IsBinaryOperatorSymbol(expression.at(index)) &&
+         !IsScientificNotationSign(expression, index);
+}
+
+bool IsStandaloneOperandSymbol(QChar symbol) {
+  return symbol == 'x' || symbol == 'E';
+}
+
+bool CanStartOperand(const QString &expression) {
+  if (expression.isEmpty()) {
+    return true;
+  }
+
+  const int last_index = expression.length() - 1;
+  return expression.at(last_index) == '(' ||
+         IsBinaryOperatorAt(expression, last_index);
+}
+
+int CurrentTokenStart(const QString &expression) {
+  int token_start = expression.length() - 1;
+  while (token_start >= 0) {
+    const QChar symbol = expression.at(token_start);
+    if (symbol == '(' || symbol == ')' ||
+        IsBinaryOperatorAt(expression, token_start)) {
+      break;
+    }
+    --token_start;
+  }
+  return token_start + 1;
+}
+
+QString CurrentToken(const QString &expression) {
+  if (expression.isEmpty()) {
+    return QString();
+  }
+  return expression.mid(CurrentTokenStart(expression));
+}
+
+bool CanAppendScientificNotationMarker(const QString &expression) {
+  const QString token = CurrentToken(expression);
+  if (token.isEmpty() || !token.back().isDigit() || token.contains('e')) {
+    return false;
+  }
+
+  bool has_digit = false;
+  bool has_point = false;
+  for (const QChar symbol : token) {
+    if (symbol.isDigit()) {
+      has_digit = true;
+    } else if (symbol == '.' && !has_point) {
+      has_point = true;
+    } else {
+      return false;
+    }
+  }
+  return has_digit;
+}
+
+bool CanAppendScientificNotationSign(const QString &expression) {
+  return !expression.isEmpty() && expression.back() == 'e';
+}
+
+bool HasIncompleteScientificNotationAtEnd(const QString &expression) {
+  const QString token = CurrentToken(expression);
+  const int exponent_index = token.lastIndexOf('e');
+  if (exponent_index < 0) {
+    return false;
+  }
+
+  if (exponent_index == token.length() - 1) {
+    return true;
+  }
+
+  const bool only_sign_after_exponent = exponent_index == token.length() - 2 &&
+                                        (token.back() == '+' ||
+                                         token.back() == '-');
+  return only_sign_after_exponent;
+}
+
+bool CurrentTokenHasScientificNotation(const QString &expression) {
+  return CurrentToken(expression).contains('e');
+}
+
+}  // namespace
+
 View::View(QWidget *parent, s21::Controller *controller)
     : QMainWindow(parent), ui_(new Ui::View), controller_(controller) {
   ui_->setupUi(this);
@@ -35,6 +141,13 @@ View::View(QWidget *parent, s21::Controller *controller)
   history_button_->setGeometry(72, 130, 125, 30);
   history_button_->setToolTip("show calculation history");
   history_button_->setFocusPolicy(Qt::NoFocus);
+  ui_->e_button->setToolTip(
+      "Euler constant; after a number, scientific notation");
+
+  advanced_access_button_ = new QPushButton("Unlock", ui_->centralwidget);
+  advanced_access_button_->setGeometry(15, 5, 80, 24);
+  advanced_access_button_->setToolTip("unlock advanced user features");
+  advanced_access_button_->setFocusPolicy(Qt::NoFocus);
 
   std::vector<QPushButton *> num_buttons = {
       ui_->zero_button,  ui_->one_button,  ui_->two_button, ui_->three_button,
@@ -86,11 +199,16 @@ View::View(QWidget *parent, s21::Controller *controller)
            SLOT(EqualButtonClicked()));
   connect(ui_->graphing, SIGNAL(clicked()), this, SLOT(OpenGraphWindow()));
   connect(history_button_, SIGNAL(clicked()), this, SLOT(OpenHistoryWindow()));
+  connect(advanced_access_button_, SIGNAL(clicked()), this,
+          SLOT(UnlockAdvancedAccess()));
 
   const QList<QPushButton *> buttons = findChildren<QPushButton *>();
   for (QPushButton *button : buttons) {
     button->setFocusPolicy(Qt::NoFocus);
   }
+
+  InstallAccessStyles();
+  ApplyAccessState();
 }
 
 View::~View() { delete ui_; }
@@ -155,7 +273,7 @@ void View::NumberClicked() {
 
     } else if (string_to_calculate_.length() != 0 &&
                string_to_calculate_.back() != ')' &&
-               string_to_calculate_.back() != 'x') {
+               !IsStandaloneOperandSymbol(string_to_calculate_.back())) {
       string_to_calculate_ += button->text();
       string_to_show_ += button->text();
       ui_->display->setText(string_to_show_);
@@ -175,7 +293,7 @@ void View::NumberClicked() {
 
     } else if (string_to_calculate_.length() != 0 &&
                string_to_calculate_.back() != ')' &&
-               string_to_calculate_.back() != 'x') {
+               !IsStandaloneOperandSymbol(string_to_calculate_.back())) {
       string_to_calculate_ += button->text();
       string_to_show_ += button->text();
       ui_->display->setText(string_to_show_);
@@ -186,9 +304,27 @@ void View::NumberClicked() {
 }
 
 void View::PlusMinusOperatorClicked() {
+  QPushButton *button = qobject_cast<QPushButton *>(sender());
+  if (button == nullptr) {
+    return;
+  }
+
+  if (CanAppendScientificNotationSign(string_to_calculate_)) {
+    string_to_calculate_ += button->text();
+    string_to_show_ += button->text();
+    ui_->display->setText(string_to_show_);
+    num_clicked_ = false;
+    flag_first_zero_ = false;
+    point_clicked_ = false;
+    operator_clicked_ = true;
+    x_clicked_ = false;
+    e_clicked_ = true;
+    return;
+  }
+
   if (string_to_calculate_.length() != 0 && !operator_clicked_ &&
-      string_to_calculate_.back() != '.') {
-    QPushButton *button = qobject_cast<QPushButton *>(sender());
+      string_to_calculate_.back() != '.' &&
+      !HasIncompleteScientificNotationAtEnd(string_to_calculate_)) {
 
     if (string_to_calculate_.back() != 'e') {
       e_clicked_ = false;
@@ -204,7 +340,6 @@ void View::PlusMinusOperatorClicked() {
     x_clicked_ = false;
 
   } else if (string_to_calculate_.length() == 0) {
-    QPushButton *button = qobject_cast<QPushButton *>(sender());
     string_to_calculate_ += button->text();
     string_to_show_ += button->text();
     ui_->display->setText(string_to_show_);
@@ -215,7 +350,8 @@ void View::PlusMinusOperatorClicked() {
 void View::MulDivOperatorClicked() {
   if (!operator_clicked_ && string_to_calculate_.length() != 0 &&
       string_to_calculate_.back() != '(' &&
-      string_to_calculate_.back() != '.') {
+      string_to_calculate_.back() != '.' &&
+      !HasIncompleteScientificNotationAtEnd(string_to_calculate_)) {
     QPushButton *button = qobject_cast<QPushButton *>(sender());
 
     if (button->text() == "×") {
@@ -235,11 +371,16 @@ void View::MulDivOperatorClicked() {
 }
 
 void View::MathFunctionClicked() {
+  if (!EnsureAdvancedAccess("Math functions")) {
+    return;
+  }
+
   bool flag = false;
   if (string_to_calculate_.length() != 0) {
     if (!num_clicked_ && !point_clicked_ &&
-        string_to_calculate_.back() != 'x' &&
-        string_to_calculate_.back() != ')') {
+        !IsStandaloneOperandSymbol(string_to_calculate_.back()) &&
+        string_to_calculate_.back() != ')' &&
+        !HasIncompleteScientificNotationAtEnd(string_to_calculate_)) {
       flag = true;
       QPushButton *button = qobject_cast<QPushButton *>(sender());
       string_to_calculate_ += button->text() + "(";
@@ -274,7 +415,9 @@ void View::OpenParenthesisButtonClicked() {
 
   } else if (string_to_calculate_.length() != 0 &&
              (operator_clicked_ || open_parenthesis_clicked_ > 0) &&
-             string_to_calculate_.back() != 'x' && !num_clicked_) {
+             !IsStandaloneOperandSymbol(string_to_calculate_.back()) &&
+             !num_clicked_ &&
+             !HasIncompleteScientificNotationAtEnd(string_to_calculate_)) {
     QPushButton *button = qobject_cast<QPushButton *>(sender());
     string_to_calculate_ += button->text();
     string_to_show_ += button->text();
@@ -309,8 +452,13 @@ void View::PointButtonClicked() {
 }
 
 void View::ModButtonClicked() {
+  if (!EnsureAdvancedAccess("Modulo")) {
+    return;
+  }
+
   if (!operator_clicked_ && (num_clicked_ || x_clicked_) &&
-      string_to_calculate_.back() != '.' && !e_clicked_) {
+      string_to_calculate_.back() != '.' &&
+      !HasIncompleteScientificNotationAtEnd(string_to_calculate_)) {
     string_to_calculate_ += "%";
     string_to_show_ += "%";
     ui_->display->setText(string_to_show_);
@@ -322,14 +470,19 @@ void View::ModButtonClicked() {
 }
 
 void View::PowButtonClicked() {
+  if (!EnsureAdvancedAccess("Power")) {
+    return;
+  }
+
   AppendPowerOperator(true);
 }
 
 void View::AppendPowerOperator(bool open_group) {
   if (string_to_calculate_.length() != 0 &&
       string_to_calculate_.back() != '.' && string_to_calculate_.back() != 'e' &&
+      !HasIncompleteScientificNotationAtEnd(string_to_calculate_) &&
       (num_clicked_ || string_to_calculate_.back() == ')' ||
-       string_to_calculate_.back() == 'x')) {
+       IsStandaloneOperandSymbol(string_to_calculate_.back()))) {
     if (open_group) {
       string_to_calculate_ += "^(";
       string_to_show_ += "^(";
@@ -349,6 +502,10 @@ void View::AppendPowerOperator(bool open_group) {
 }
 
 void View::SqrtButtonClicked() {
+  if (!EnsureAdvancedAccess("Square root")) {
+    return;
+  }
+
   if (string_to_calculate_.length() == 0) {
     QPushButton *button = qobject_cast<QPushButton *>(sender());
     string_to_calculate_ += "r(";
@@ -358,7 +515,8 @@ void View::SqrtButtonClicked() {
     operator_clicked_ = false;
 
   } else if (string_to_calculate_.length() != 0 &&
-             (operator_clicked_ || string_to_calculate_.back() == '(')) {
+             (operator_clicked_ || string_to_calculate_.back() == '(') &&
+             !HasIncompleteScientificNotationAtEnd(string_to_calculate_)) {
     QPushButton *button = qobject_cast<QPushButton *>(sender());
     string_to_calculate_ += "r(";
     string_to_show_ += button->text() + "(";
@@ -370,7 +528,12 @@ void View::SqrtButtonClicked() {
 }
 
 void View::XButtonClicked() {
-  if ((string_to_calculate_.length() == 0 || operator_clicked_) ||
+  if (!EnsureAdvancedAccess("Variable x")) {
+    return;
+  }
+
+  if (((string_to_calculate_.length() == 0 || operator_clicked_) &&
+       !HasIncompleteScientificNotationAtEnd(string_to_calculate_)) ||
       (open_parenthesis_clicked_ > 0 && !num_clicked_ && !x_clicked_)) {
     QPushButton *button = qobject_cast<QPushButton *>(sender());
     string_to_calculate_ += "x";
@@ -383,12 +546,38 @@ void View::XButtonClicked() {
 }
 
 void View::EButtonClicked() {
-  if (!e_clicked_ && num_clicked_ && !point_clicked_) {
-    QPushButton *button = qobject_cast<QPushButton *>(sender());
+  if (!EnsureAdvancedAccess("Euler constant and scientific notation")) {
+    return;
+  }
+
+  QPushButton *button = qobject_cast<QPushButton *>(sender());
+  if (button == nullptr) {
+    return;
+  }
+
+  if (CanAppendScientificNotationMarker(string_to_calculate_)) {
     string_to_show_ += button->text();
-    string_to_calculate_ += button->text();
+    string_to_calculate_ += "e";
     ui_->display->setText(string_to_show_);
     e_clicked_ = true;
+    num_clicked_ = false;
+    point_clicked_ = false;
+    operator_clicked_ = true;
+    x_clicked_ = false;
+    flag_first_zero_ = false;
+    return;
+  }
+
+  if (CanStartOperand(string_to_calculate_)) {
+    string_to_show_ += button->text();
+    string_to_calculate_ += "E";
+    ui_->display->setText(string_to_show_);
+    e_clicked_ = false;
+    num_clicked_ = false;
+    point_clicked_ = false;
+    operator_clicked_ = false;
+    x_clicked_ = true;
+    flag_first_zero_ = true;
   }
 }
 
@@ -434,6 +623,9 @@ void View::BackspaceClicked() {
     } else if (string_to_calculate_.back() == 'x') {
       string_to_calculate_.chop(1);
       string_to_show_.chop(2);
+
+    } else if (string_to_calculate_.back() == 'E') {
+      ChopString(1);
 
     } else if (string_to_calculate_.back() == 'e') {
       ChopString(1);
@@ -484,76 +676,50 @@ void View::BackspaceClicked() {
 }
 
 bool View::GetPointStatus(QString::ConstIterator str) {
-  while (!str->isNull() && *str != '+' && *str != '-' && *str != '*' &&
-         *str != '/' && *str != '%' && *str != '^' && *str != '(' &&
-         *str != ')') {
-    if (*str == '.') {
-      return true;
-      break;
-    }
-    --str;
-  }
-  return false;
+  Q_UNUSED(str);
+  return CurrentToken(string_to_calculate_).contains('.');
 }
 
 bool View::GetOperatorStatus(QString::ConstIterator str) {
-  if (!str->isNull() &&
-      (*str == '+' || *str == '-' || *str == '*' || *str == '/' ||
-       *str == '%' || *str == '^')) {
-    return true;
+  if (str->isNull()) {
+    return false;
   }
-  return false;
+  return IsBinaryOperatorAt(
+      string_to_calculate_,
+      static_cast<int>(str - string_to_calculate_.constBegin()));
 }
 
 bool View::GetZeroStatus(QString::ConstIterator str) {
-  /// 如果当前字符不是小数点
-  if (!str->isNull() && *str == '0') {
-    return false;
-
-  /// 如果当前字符是小数点
-  } else if (!str->isNull() && *str == '.') {
-    if (*(--str) == '0') {
-      if (!(str - 1)->isNull() && (*(str - 1) == '+' || *(str - 1) == '-' ||
-                                   *(str - 1) == '*' || *(str - 1) == '/' ||
-                                   *(str - 1) == '%' || *(str - 1) == '^')) {
-        return false;
-
-      } else if ((str - 1)->isNull()) {
-        return false;
-      }
-    }
-  }
-  return true;
+  Q_UNUSED(str);
+  const QString token = CurrentToken(string_to_calculate_);
+  return token != "0";
 }
 
 bool View::GetNumStatus(QString::ConstIterator str) {
-  if (!str->isNull() && str->isDigit() || *str == '.') {
+  if (!str->isNull() && (str->isDigit() || *str == '.')) {
     return true;
   }
   return false;
 }
 
 bool View::GetXStatus(QString::ConstIterator str) {
-  if (!str->isNull() && *str == 'x') {
+  if (!str->isNull() && IsStandaloneOperandSymbol(*str)) {
     return true;
   }
   return false;
 }
 
 bool View::GetEStatus(QString::ConstIterator str) {
-  if (!str->isNull() && *str == 'e') {
-    return true;
-  }
-
-  str -= 2;
-
-  if (!str->isNull() && *str == 'e') {
-    return true;
-  }
-  return false;
+  Q_UNUSED(str);
+  return CurrentTokenHasScientificNotation(string_to_calculate_);
 }
 
 bool View::HandleKeyboardAction(const s21::KeyboardAction &action) {
+  if (!s21::AccessControl::IsKeyboardActionAllowed(user_role_, action)) {
+    EnsureAdvancedAccess("This keyboard shortcut");
+    return true;
+  }
+
   switch (action.type) {
     case s21::KeyboardActionType::kIgnored:
       return false;
@@ -643,6 +809,105 @@ QPushButton *View::ButtonForKeyboardAction(
   }
 }
 
+void View::UnlockAdvancedAccess() {
+  if (IsAdvancedUser()) {
+    QMessageBox::information(this, "Access", "Advanced access is already unlocked");
+    return;
+  }
+
+  bool accepted = false;
+  const QString key = QInputDialog::getText(
+      this, "Unlock advanced access", "Enter advanced user key:",
+      QLineEdit::Password, QString(), &accepted);
+  if (!accepted) {
+    return;
+  }
+
+  if (!s21::AccessControl::IsAdvancedKey(key)) {
+    QMessageBox::warning(this, "Access", "Invalid advanced user key");
+    return;
+  }
+
+  user_role_ = s21::UserRole::kAdvanced;
+  ApplyAccessState();
+  statusBar()->showMessage("Advanced access unlocked", 3000);
+  QMessageBox::information(this, "Access", "Advanced access unlocked");
+}
+
+void View::ApplyAccessState() {
+  const bool advanced = IsAdvancedUser();
+  SetAdvancedControlsEnabled(advanced);
+
+  if (advanced_access_button_ != nullptr) {
+    advanced_access_button_->setText(advanced ? "Advanced" : "Unlock");
+    advanced_access_button_->setToolTip(
+        advanced ? "advanced user features are unlocked"
+                 : "unlock advanced user features");
+  }
+
+  ui_->x_value_input->setPlaceholderText(advanced ? "0" : "locked");
+}
+
+bool View::IsAdvancedUser() const {
+  return user_role_ == s21::UserRole::kAdvanced;
+}
+
+bool View::EnsureAdvancedAccess(const QString &feature_name) {
+  if (IsAdvancedUser()) {
+    return true;
+  }
+
+  const QString message = QString("%1 requires advanced access").arg(feature_name);
+  statusBar()->showMessage(message, 3000);
+  return false;
+}
+
+void View::SetAdvancedControlsEnabled(bool enabled) {
+  const QList<QWidget *> advanced_controls = {
+      ui_->x_button,     ui_->e_button,    ui_->mod_button,
+      ui_->pow_button,   ui_->sqrt_button, ui_->tan_button,
+      ui_->cos_button,   ui_->sin_button,  ui_->atan_button,
+      ui_->acos_button,  ui_->asin_button, ui_->log_button,
+      ui_->ln_button,    ui_->graphing,    ui_->x_label,
+      ui_->x_value_input};
+
+  for (QWidget *control : advanced_controls) {
+    control->setEnabled(enabled);
+  }
+
+  if (history_button_ != nullptr) {
+    history_button_->setEnabled(enabled);
+  }
+}
+
+void View::InstallAccessStyles() {
+  const QString disabled_button_style =
+      "\nQPushButton:disabled {"
+      " background-color: #C8C8C8;"
+      " border-color: #A0A0A0;"
+      " color: #808080;"
+      "}";
+  const QList<QPushButton *> advanced_buttons = {
+      ui_->x_button,    ui_->e_button,     ui_->mod_button,
+      ui_->pow_button,  ui_->sqrt_button,  ui_->tan_button,
+      ui_->cos_button,  ui_->sin_button,   ui_->atan_button,
+      ui_->acos_button, ui_->asin_button,  ui_->log_button,
+      ui_->ln_button,   ui_->graphing,     history_button_};
+
+  for (QPushButton *button : advanced_buttons) {
+    if (button != nullptr) {
+      button->setStyleSheet(button->styleSheet() + disabled_button_style);
+    }
+  }
+
+  ui_->x_label->setStyleSheet(
+      ui_->x_label->styleSheet() +
+      "\nQLabel:disabled { background-color: #C8C8C8; color: #808080; }");
+  ui_->x_value_input->setStyleSheet(
+      ui_->x_value_input->styleSheet() +
+      "\nQLineEdit:disabled { background-color: #D6D6D6; color: #808080; }");
+}
+
 void View::EqualButtonClicked() {
   if (open_parenthesis_clicked_ == 0 && string_to_calculate_.length() != 0 &&
       operator_clicked_ == false) {
@@ -727,6 +992,10 @@ void View::SaveHistoryRecord(const QString &expression,
 }
 
 void View::OpenHistoryWindow() {
+  if (!EnsureAdvancedAccess("History")) {
+    return;
+  }
+
   QDialog dialog(this);
   dialog.setWindowTitle("Calculation History");
   dialog.resize(520, 420);
@@ -862,20 +1131,17 @@ void View::RebuildInputState() {
 
   const QChar last_symbol = string_to_calculate_.back();
   num_clicked_ = last_symbol.isDigit() || last_symbol == '.';
-  operator_clicked_ = last_symbol == '+' || last_symbol == '-' ||
-                      last_symbol == '*' || last_symbol == '/' ||
-                      last_symbol == '%' || last_symbol == '^';
-  x_clicked_ = last_symbol == 'x';
+  operator_clicked_ = IsBinaryOperatorAt(string_to_calculate_,
+                                         string_to_calculate_.length() - 1) ||
+                      HasIncompleteScientificNotationAtEnd(
+                          string_to_calculate_);
+  x_clicked_ = IsStandaloneOperandSymbol(last_symbol);
 
   int token_start = string_to_calculate_.length() - 1;
   while (token_start >= 0) {
     const QChar symbol = string_to_calculate_.at(token_start);
-    const bool is_scientific_sign =
-        (symbol == '+' || symbol == '-') && token_start > 0 &&
-        string_to_calculate_.at(token_start - 1) == 'e';
-    if (!is_scientific_sign &&
-        (symbol == '+' || symbol == '-' || symbol == '*' || symbol == '/' ||
-         symbol == '%' || symbol == '^' || symbol == '(' || symbol == ')')) {
+    if (symbol == '(' || symbol == ')' ||
+        IsBinaryOperatorAt(string_to_calculate_, token_start)) {
       break;
     }
     if (symbol == '.') {
@@ -904,6 +1170,10 @@ QString View::TruncateZeros(long double &value) {
 }
 
 void View::OpenGraphWindow() {
+  if (!EnsureAdvancedAccess("Graph plotting")) {
+    return;
+  }
+
   /// 如果绘图窗口尚未打开
   if (graph_ == nullptr) {
     graph_ = new Graph(this);

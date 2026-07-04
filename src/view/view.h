@@ -9,6 +9,7 @@
 #include "../history/history_manager.h"
 #include "format_string.h"
 #include "graph.h"
+#include "access_control.h"
 #include "keyboard_adapter.h"
 
 QT_BEGIN_NAMESPACE
@@ -105,7 +106,7 @@ class View : public QMainWindow {
   void XButtonClicked();
 
   /**
-   * @brief 处理科学计数法符号 `e` 按钮点击事件。
+   * @brief 处理自然常数 `e` 和科学计数法符号 `e` 按钮点击事件。
    */
   void EButtonClicked();
 
@@ -128,6 +129,11 @@ class View : public QMainWindow {
    * @brief 打开计算历史记录窗口。
    */
   void OpenHistoryWindow();
+
+  /**
+   * @brief 输入密钥并解锁进阶用户权限。
+   */
+  void UnlockAdvancedAccess();
 
  private slots:
 
@@ -225,6 +231,33 @@ class View : public QMainWindow {
   void RebuildInputState();
 
   /**
+   * @brief 将当前用户权限状态同步到界面控件。
+   */
+  void ApplyAccessState();
+
+  /**
+   * @brief 判断当前是否已解锁进阶用户权限。
+   */
+  bool IsAdvancedUser() const;
+
+  /**
+   * @brief 确保进阶功能可以使用。
+   * @param feature_name 功能名称，用于提示用户。
+   * @return 当前是进阶用户时返回 true。
+   */
+  bool EnsureAdvancedAccess(const QString &feature_name);
+
+  /**
+   * @brief 禁用或启用全部进阶功能入口。
+   */
+  void SetAdvancedControlsEnabled(bool enabled);
+
+  /**
+   * @brief 为进阶功能控件追加禁用态样式。
+   */
+  void InstallAccessStyles();
+
+  /**
    * @brief 将历史记录回填到主界面。
    * @param record 待回填历史记录。
    */
@@ -255,6 +288,8 @@ class View : public QMainWindow {
   s21::Controller *controller_;  ///< 指向 Controller 实例的指针。
   s21::HistoryManager history_manager_;  ///< 历史记录管理器。
   QPushButton *history_button_ = nullptr;  ///< 历史记录入口按钮。
+  QPushButton *advanced_access_button_ = nullptr;  ///< 权限解锁入口按钮。
+  s21::UserRole user_role_ = s21::UserRole::kOrdinary;  ///< 当前用户权限。
   QString string_to_calculate_;  ///< 供解析和计算使用的表达式字符串。
   QString string_to_show_;       ///< 用于在界面中展示的表达式字符串。
   bool num_clicked_ = false;       ///< 标记最后输入的词法单元是否为数字。
